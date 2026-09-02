@@ -1,5 +1,7 @@
 from pathlib import Path
 from node import Node
+from my_queue import Queue
+import array
 
 def create_empty_list_graph(n):
     return [Node(None, None) for _ in range(n)]
@@ -75,6 +77,41 @@ def str_matrix(graph):
         result += str(graph[i]) + "\n"
     return result
 
+def BFS_adj_list(graph, start_node, generate_tree: bool = False):
+    queue = Queue()
+    vector = array.array('i', [0 for _ in range(len(graph))])
+
+    parents = [None] * len(graph)
+    levels = [-1] * len(graph)
+    queue.enqueue(start_node)
+    vector[start_node] = 1
+    result_discovered = []
+    
+    if generate_tree:
+        levels[start_node] = 0
+        
+    while not queue.isEmpty():
+        current_node = queue.dequeue()
+        result_discovered.append(current_node)
+        
+        neighbor = graph[current_node].next
+        
+        while neighbor != None:
+            if vector[neighbor.value] == 0:
+                queue.enqueue(neighbor.value)
+                vector[neighbor.value] = 1
+                
+                if generate_tree:
+                    parents[neighbor.value] = current_node
+                    levels[neighbor.value] = levels[current_node] + 1
+                    
+            neighbor = neighbor.next
+            
+    if generate_tree:
+        return result_discovered, parents, levels
+        
+    return result_discovered
+
 class Graph():
     def __init__(self, archive,adj_list : bool = False):
         
@@ -94,12 +131,23 @@ class Graph():
         
         return str_matrix(self.graph)
     
+    def BFS(self, start_node, generate_tree : bool = False):
+        
+        
+        if self.adj_list:
+            return BFS_adj_list(self.graph,start_node, generate_tree)
+        
+        return self.BFS_matrix(start_node)
+    
 if __name__ == "__main__":
     graph_file = Path(__file__).resolve().parents[2] / "graph1.txt"
     graph1 = Graph(graph_file, adj_list=False)
     print(graph1)
     
     graph2 = Graph(graph_file, adj_list=True)
+    print(graph2.BFS(1, generate_tree=True))
     print(graph2)
+    
+    
     
     
