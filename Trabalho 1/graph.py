@@ -90,6 +90,7 @@ def BFS_adj_list(graph, start_node, generate_tree: bool = False):
     if generate_tree:
         levels[start_node] = 0
         
+        
     while not queue.isEmpty():
         current_node = queue.dequeue()
         result_discovered.append(current_node)
@@ -111,6 +112,42 @@ def BFS_adj_list(graph, start_node, generate_tree: bool = False):
         return result_discovered, parents, levels
         
     return result_discovered
+
+def BFS_matrix(graph, start_node, generate_tree: bool = False):
+    
+    queue = Queue()
+    vector = array.array('i', [0 for _ in range(len(graph))])
+    
+    queue.enqueue(start_node)
+    vector[start_node] = 1
+    
+    parents = [None] * len(graph)
+    levels = [-1] * len(graph)
+    
+    if generate_tree:
+        levels[start_node] = 0
+    
+    result_discovered = []
+    
+    while queue.isEmpty() == False:
+        current_node = queue.dequeue()
+        result_discovered.append(current_node)
+        
+        for neighbor in range(len(graph)):
+            if graph[current_node][neighbor] == 1 and vector[neighbor] == 0:
+                queue.enqueue(neighbor)
+                vector[neighbor] = 1
+                
+                if generate_tree:
+                    parents[neighbor] = current_node
+                    levels[neighbor] = levels[current_node] + 1
+    
+    if generate_tree:
+        return result_discovered, parents, levels
+    
+    return result_discovered
+    
+    
 
 class Graph():
     def __init__(self, archive,adj_list : bool = False):
@@ -137,16 +174,17 @@ class Graph():
         if self.adj_list:
             return BFS_adj_list(self.graph,start_node, generate_tree)
         
-        return self.BFS_matrix(start_node)
+        return BFS_matrix(self.graph, start_node, generate_tree)
     
 if __name__ == "__main__":
     graph_file = Path(__file__).resolve().parents[2] / "graph1.txt"
-    graph1 = Graph(graph_file, adj_list=False)
+    graph1 = Graph(graph_file)
     print(graph1)
+    print(graph1.BFS(1, generate_tree=True))
     
     graph2 = Graph(graph_file, adj_list=True)
-    print(graph2.BFS(1, generate_tree=True))
     print(graph2)
+    print(graph2.BFS(1, generate_tree=True))
     
     
     
