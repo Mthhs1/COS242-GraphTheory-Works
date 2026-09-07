@@ -9,6 +9,7 @@ def create_list_graph(archive_directory):
         n = int(line)
         graph = create_empty_list_graph(n)
         last_nodes = [None for _ in range(n)]
+        neighbor = {i: [] for i in range(n)}
 
         for i in range(n):
             line = file.readline()
@@ -16,24 +17,23 @@ def create_list_graph(archive_directory):
 
             a = int(line[0]) - 1
             b = int(line[1]) - 1
+
+            neighbor[a].append(b)
+            neighbor[b].append(a)
+
+
+        for i in neighbor:
+            neighbor[i].sort(reverse=True)
             
-            node_a = Node(b, None)
-            node_b = Node(a, None)
-            
-            if last_nodes[a] == None:
-                graph[a].next = node_a
-            else:
-                last_nodes[a].next = node_a
+            for j in range(len(neighbor[i])):
+                if last_nodes[i] == None:
+                    graph[i].next = Node(neighbor[i][j], None)
+                    last_nodes[i] = graph[i].next
+                else:
+                    last_nodes[i].next = Node(neighbor[i][j], None)
+                    last_nodes[i] = last_nodes[i].next
 
-            if last_nodes[b] == None:
-                graph[b].next = node_b
-            else:
-                last_nodes[b].next = node_b
-
-            last_nodes[a] = last_nodes[a].next if last_nodes[a] != None else graph[a].next
-            last_nodes[b] = last_nodes[b].next if last_nodes[b] != None else graph[b].next
-
-        return graph
+        return graph      
 
 def create_empty_matrix_graph(n):
     return [[0 for _ in range(n)] for _ in range(n)]
