@@ -60,10 +60,10 @@ def create_matrix_graph(archive_directory):
 def str_adj_list(graph):
     result = ""
     for i in range(len(graph)):
-        result += f"{i + 1}: "
+        result += f"{i}: "
         current_node = graph[i].next
         while current_node != None:
-            result += f"{current_node.value + 1} -> "
+            result += f"{current_node.value} -> "
             current_node = current_node.next
         result += "None\n"
     return result
