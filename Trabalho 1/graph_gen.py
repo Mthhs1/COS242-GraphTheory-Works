@@ -11,12 +11,16 @@ def create_list_graph(archive_directory):
         last_nodes = [None for _ in range(n)]
         neighbor = {i: [] for i in range(n)}
 
-        for i in range(n):
-            line = file.readline()
-            line = line.strip().split()
+        # CORRECAO: o arquivo tem n vertices na 1a linha e depois m arestas,
+        # uma por linha. O laco antigo (range(n)) lia n linhas de aresta, o
+        # que so funciona quando m == n. Agora lemos ate o fim do arquivo.
+        for line in file:
+            parts = line.strip().split()
+            if len(parts) < 2:
+                continue
 
-            a = int(line[0]) - 1
-            b = int(line[1]) - 1
+            a = int(parts[0]) - 1
+            b = int(parts[1]) - 1
 
             neighbor[a].append(b)
             neighbor[b].append(a)
@@ -45,12 +49,16 @@ def create_matrix_graph(archive_directory):
         n = int(line)
         graph = create_empty_matrix_graph(n)
 
-        for i in range(n):
-            line = file.readline()
-            line = line.strip().split()
+        # CORRECAO: o arquivo tem n vertices na 1a linha e depois m arestas,
+        # uma por linha. O laco antigo (range(n)) lia n linhas de aresta, o
+        # que so funciona quando m == n. Agora lemos ate o fim do arquivo.
+        for line in file:
+            parts = line.strip().split()
+            if len(parts) < 2:
+                continue
 
-            a = int(line[0]) - 1
-            b = int(line[1]) - 1
+            a = int(parts[0]) - 1
+            b = int(parts[1]) - 1
             
             graph[a][b] = 1
             graph[b][a] = 1
