@@ -2,7 +2,7 @@ from my_queue import Queue
 import array
 
 
-def BFS_adj_list(graph, start_node, generate_tree: bool = False):
+def BFS_adj_list(graph, start_node, generate_tree: bool = False, target_mode=-1):
     queue = Queue()
     vector = array.array('i', [0 for _ in range(len(graph))])
 
@@ -11,7 +11,7 @@ def BFS_adj_list(graph, start_node, generate_tree: bool = False):
     queue.enqueue(start_node)
     vector[start_node] = 1
     result_discovered = []
-    
+     
     if generate_tree:
         levels[start_node] = 0
         
@@ -19,6 +19,9 @@ def BFS_adj_list(graph, start_node, generate_tree: bool = False):
     while not queue.isEmpty():
         current_node = queue.dequeue()
         result_discovered.append(current_node)
+
+        if current_node == target_mode:
+             return result_discovered, parents, levels
         
         neighbor = graph[current_node].next
         

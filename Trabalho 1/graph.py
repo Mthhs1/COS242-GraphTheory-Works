@@ -27,10 +27,10 @@ class Graph():
         
         return graph_gen.str_matrix(self.graph)
     
-    def BFS(self, start_node, generate_tree : bool = False):
+    def BFS(self, start_node, generate_tree : bool = False, target_mode : int = -1):
         
         if self.adj_list:
-            return BFS_adj_list(self.graph,start_node, generate_tree)
+            return BFS_adj_list(self.graph,start_node, generate_tree, target_mode)
         
         return BFS_matrix(self.graph, start_node, generate_tree)
     
@@ -73,7 +73,7 @@ class Graph():
 
 
 if __name__ == "__main__":
-    graph_file = Path(__file__).resolve().parents[2] / "graph1.txt"
+    graph_file = Path(__file__).resolve().parents[1] / "graph1.txt"
     print("\nGrafo 1 - Matriz de Adjacência")
     graph1 = Graph(graph_file)
     print(graph1)
@@ -84,10 +84,9 @@ if __name__ == "__main__":
     print("\nGrafo 1 - Lista de Adjacência")
     graph2 = Graph(graph_file, adj_list=True)
     print(graph2)
-    print("DFS:")
-    print(graph2.DFS(1, generate_tree=True))
+    #print("DFS:")
+    #print(graph2.DFS(1, generate_tree=True))
     #print(graph2.BFS(1, generate_tree=True))
-    
-    
+    print(graph2.Path(0,3))
     
     
