@@ -1,0 +1,17 @@
+=== INFORMACOES DO GRAFO ===
+
+Numero de vertices: 5
+Numero de arestas: 5
+Grau minimo: 1
+Grau maximo: 4
+Grau medio: 2.0000
+Mediana de grau: 2.0
+
+=== COMPONENTES CONEXAS ===
+
+Numero de componentes conexas: 1
+Maior componente: 5 vertices
+Menor componente: 5 vertices
+
+Componente 1 (5 vertices):
+  1 2 3 4 5

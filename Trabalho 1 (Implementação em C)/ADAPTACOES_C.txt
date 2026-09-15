@@ -1,0 +1,164 @@
+================================================================================
+ADAPTACOES: PYTHON -> C
+================================================================================
+
+Lista completa das adaptacoes feitas na transcricao do codigo de Python
+(pasta "Trabalho 1") para C (esta pasta). A logica dos algoritmos e os
+nomes de variaveis/funcoes foram mantidos; o que muda abaixo e apenas o
+que a linguagem C exige ou nao oferece.
+
+--------------------------------------------------------------------------------
+1. ESTRUTURA DE ARQUIVOS
+--------------------------------------------------------------------------------
+- Cada modulo .py virou um par .c + .h (o .h traz as declaracoes publicas,
+  papel dos imports do Python).
+- test_parte1.py -> test_parte1.c.
+- Novo Makefile (nao existe no Python): compila a biblioteca, os testes e
+  os demos de cada modulo.
+- Organizacao em pastas (so no C; a pasta do Python permanece plana):
+  DataStructures/ = node, my_queue, my_stack; Algorithms/ = BFS, DFS,
+  components, distance, graph_stats; Study cases/ = programas da secao 4
+  do enunciado (estudos de caso); na raiz ficam a classe Graph (graph),
+  a leitura do grafo (graph_gen), os utilitarios (graph_utils) e os testes.
+- As linhas #include continuam sem prefixo de pasta (como os imports do
+  Python); o Makefile passa -I. -IDataStructures -IAlgorithms ao gcc.
+- Os executaveis sao gerados em bin/ pelo Makefile ("make clean" remove).
+
+--------------------------------------------------------------------------------
+2. None -> VALORES SENTINELA
+--------------------------------------------------------------------------------
+- parents[i] guarda -1 onde o Python guardava None (rotulos de vertices sao
+  sempre >= 0, entao -1 e seguro).
+- No nivel da Graph (API publica), target = 0 significa "nenhum alvo"
+  (None no Python), pois rotulos 1-based comecam em 1. Nas funcoes crua
+  BFS_adj_list/BFS_matrix (indices 0-based), target = -1 significa "nenhum".
+- Queue_dequeue/Queue_front devolvem -1 quando a fila esta vazia
+  (o Python devolvia None).
+
+--------------------------------------------------------------------------------
+3. EXCECOES -> EXIT COM MENSAGEM
+--------------------------------------------------------------------------------
+- O ValueError do Graph_to_index (rotulo invalido) vira fprintf(stderr) +
+  exit(EXIT_FAILURE). Idem para arquivo de entrada inexistente/invalido e
+  falha de alocacao.
+- No teste de rotulos invalidos, checar_erro roda a chamada em um processo
+  filho (fork + waitpid) e verifica se ele encerrou com erro - o
+  equivalente de capturar a excecao no Python.
+
+--------------------------------------------------------------------------------
+4. TUPLA DE BUSCA -> STRUCT GraphSearch
+--------------------------------------------------------------------------------
+- A tripla (ordem, pais, niveis) devolvida por BFS/DFS no Python vira o
+  struct GraphSearch { result_discovered, count, parents, levels }.
+- count e o len(result_discovered) do Python (necessario em C porque o
+  vetor e alocado com tamanho n e o early-exit do target pode encurta-lo).
+- Com generate_tree == 0, a Graph libera parents/levels e os deixa NULL:
+  sobra apenas a ordem, como "devolver so o primeiro argumento" no Python.
+
+--------------------------------------------------------------------------------
+5. DICT E LISTAS DE LISTAS -> STRUCTS
+--------------------------------------------------------------------------------
+- O dict de graph_stats() vira o struct GraphStats { vertices, arestas,
+  grau_minimo, grau_maximo, grau_medio, mediana_grau } (mesmas chaves).
+- A lista de listas de connected_components() vira o struct Components
+  { count, components, sizes }, com Components_free() para libera-la.
+
+--------------------------------------------------------------------------------
+6. GERADORES -> VETORES ALOCADOS
+--------------------------------------------------------------------------------
+- neighbors() (yield no Python) devolve um int* alocado com os vizinhos e
+  o tamanho em *count_out; o chamador chama free().
+- O dict {i: []} do create_list_graph vira vetores dinamicos
+  (neighbor/neighbor_len/neighbor_cap) com a funcao auxiliar
+  neighbor_append(), que faz o papel do .append do Python.
+
+--------------------------------------------------------------------------------
+7. MEMORIA (COLETOR DE LIXETO -> FREE EXPLICITO)
+--------------------------------------------------------------------------------
+- xmalloc/xcalloc/xrealloc (graph_utils.c): alocam e encerram o programa
+  em caso de falha - substituem a alocacao automatica/confiavel do Python.
+- Quem aloca, libera:
+  * Graph_destroy()          -> libera o grafo (nao existe no Python)
+  * GraphSearch_free()      -> libera a tripla de busca
+  * Components_free()       -> libera as componentes
+  * free_list_graph / free_matrix_graph (graph_gen.c)
+  * strings devolvidas (Graph_str, stats_text, summary, write_output,
+    write_search_tree) sao malloc'd e devem ser liberadas com free()
+- Apos o early-exit do BFS (target) a fila/pilha ainda pode ter nos;
+  eles sao esvaziados no fim da funcao (o coletor de lixo fazia isso).
+
+--------------------------------------------------------------------------------
+8. STRINGS
+--------------------------------------------------------------------------------
+- str_append(buffer, formato, ...) (graph_utils.c): substitui a
+  concatenacao com f-strings do Python (texto += f"..."); devolve o novo
+  buffer (realloc interno).
+- str_adj_list/str_matrix, summary, stats_text, write_output e
+  write_search_tree constroem strings com str_append e devolvem malloc'd.
+- A leitura do arquivo e bufferizada (Leitor/ler_inteiro em graph_gen.c):
+  a primeira linha e o n, e os pares "a b" sao lidos ate o fim do arquivo,
+  com a mesma semantica do fscanf %d - mas bem mais rapida (os arquivos dos
+  estudos de caso chegam a centenas de MB e fscanf e lento demais). O
+  Python pulava linhas com menos de 2 campos; aqui a leitura para no fim
+  do arquivo ou em caractere invalido.
+
+--------------------------------------------------------------------------------
+9. CLASSE GRAPH -> STRUCT + FUNCOES
+--------------------------------------------------------------------------------
+- self.graph vira uma uniao: union { Node **list; int **matrix; } graph -
+  mesmo nome de variavel, dois tipos possiveis.
+- len(graph) do Python vira o campo n do struct (vetores em C nao carregam
+  o proprio tamanho); as funcoes crua (BFS_adj_list etc.) recebem n como
+  parametro.
+- Metodos viram funcoes prefixadas: Graph_create (__init__), Graph_destroy
+  (novo, por causa do free), Graph_str (__str__), Graph_BFS, Graph_DFS,
+  Graph_connected_components, Graph_distance, Graph_diameter, Graph_stats,
+  Graph_write_output, Graph_write_search_tree.
+- _to_index (privada por convencao no Python) vira static em graph.c -
+  em C, static = visivel apenas dentro do modulo.
+- Queue/Stack: metodos viram Queue_enqueue/Stack_push etc., com Queue_init/
+  Stack_init no lugar dos construtores.
+
+--------------------------------------------------------------------------------
+10. ORDENACAO
+--------------------------------------------------------------------------------
+- Python sort()/sorted() -> qsort() com comparadores
+  (comparar_descendente reproduz sort(reverse=True)).
+- components.sort(key=len, reverse=True) no Python E ESTAVEL (empates
+  mantem a ordem de descoberta); qsort NAO e estavel, por isso a ordenacao
+  por tamanho decrescente usa insertion sort, que e estavel como o Python.
+
+--------------------------------------------------------------------------------
+11. OUTROS
+--------------------------------------------------------------------------------
+- True/False -> stdbool.h; os demos imprimem "True"/"False" como o Python.
+- soma // 2 (edge_count) -> soma / 2: divisao de inteiros em C ja trunca.
+- array.array('i', [0]*n) do BFS/DFS -> xcalloc de int.
+- round(x, 4) nos testes -> funcao round4() (math.h, link -lm).
+- tempfile.TemporaryDirectory() do teste -> arquivo fixo "arvore_teste.txt",
+  removido (remove) apos a verificacao.
+- if __name__ == "__main__" de cada .py -> bloco #ifdef <MODULO>_MAIN no .c,
+  ativado pelo Makefile (-D<MODULO>_MAIN). Alvos: graph (GRAPH_MAIN),
+  my_queue_demo, my_stack_demo, components_demo, distance_demo,
+  graph_stats_demo.
+- Caminhos relativos dos demos assumem execucao a partir desta pasta
+  ("graph_exemplo.txt" aqui; "../graph1.txt" no demo graph, equivalente ao
+  parents[1]/"graph1.txt" do Python).
+
+--------------------------------------------------------------------------------
+12. AJUSTES PARA GRAFOS GRANDES (ESTUDOS DE CASO)
+--------------------------------------------------------------------------------
+- Leitura de arquivo bufferizada (item 8): um grafo de 15MB carrega em
+  ~0,2s; com fscanf eram varios segundos, e os maiores chegam a 350MB.
+- connected_components alocava n inteiros por componente: em grafos com
+  muitas componentes isso multiplicava a memoria. Agora o vetor de cada
+  componente cresce dinamicamente (realloc dobrando).
+- O demo do graph.c nao imprime a representacao nem a ordem completa de
+  buscas quando o grafo tem mais de 1000 vertices (imprimir a matriz de um
+  grafo com ~50 mil vertices produziria bilhoes de caracteres).
+- Programas da secao 4 do enunciado na pasta "Study cases" (um por
+  questao): pausa para medicao manual de memoria (Q1), 100 BFS/DFS com
+  tempo medio (Q2/Q3, cronometrando apenas o algoritmo, como pede o
+  enunciado), pais de 10/20/30 nas arvores BFS/DFS partindo de 1/2/3 (Q4),
+  distancias dos pares (10,20), (10,30), (20,30) (Q5), resumo das
+  componentes conexas (Q6) e diametro exato/aproximado (Q7).

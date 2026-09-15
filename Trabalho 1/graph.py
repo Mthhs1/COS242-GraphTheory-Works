@@ -1,6 +1,4 @@
 from pathlib import Path
-from node import Node
-from my_queue import Queue
 from BFS import BFS_adj_list, BFS_matrix
 from DFS import DFS_adj_list, DFS_matrix
 import graph_gen
@@ -8,36 +6,76 @@ import components
 import distance as distance_mod
 import graph_stats
 
+
 class Graph():
-    def __init__(self, archive,adj_list : bool = False):
-        
+    def __init__(self, archive, adj_list: bool = False):
+        """
+        Carrega o grafo do arquivo `archive`. adj_list=True usa lista de
+        adjacencia; adj_list=False (padrao) usa matriz de adjacencia.
+        """
         self.adj_list = adj_list
-        
+
         if adj_list:
             self.graph = graph_gen.create_list_graph(archive)
             return
-        
+
         self.graph = graph_gen.create_matrix_graph(archive)
-        return
-    
+
+    def _to_index(self, label):
+        """Converte rotulo 1-based (como no arquivo de entrada) em indice
+        0-based, validando os limites."""
+        index = label - 1
+        if not 0 <= index < len(self.graph):
+            raise ValueError(
+                f"vertice invalido: {label} (o grafo tem {len(self.graph)} vertices)"
+            )
+        return index
+
     def __str__(self):
-        
+
         if self.adj_list:
             return graph_gen.str_adj_list(self.graph)
-        
+
         return graph_gen.str_matrix(self.graph)
-    
-    def BFS(self, start_node, generate_tree : bool = False, target_mode : int = -1):
-        
+
+    def BFS(self, start_node, generate_tree: bool = False, target=None):
+        """
+        Busca em largura a partir de `start_node` (rotulo 1-based).
+
+        Com generate_tree=False devolve apenas a ordem de descoberta; com
+        True devolve a tripla (ordem, pais, niveis), tudo indexado em 0.
+        Se `target` (rotulo 1-based) for fornecido, a busca encerra ao
+        alcancar o alvo, em ambas as representacoes.
+        """
+        start = self._to_index(start_node)
+        target_index = None if target is None else self._to_index(target)
+
         if self.adj_list:
-            return BFS_adj_list(self.graph,start_node, generate_tree, target_mode)
-        
-        return BFS_matrix(self.graph, start_node, generate_tree)
-    
-    def DFS(self, start_node, generate_tree : bool = False):
+            order, parents, levels = BFS_adj_list(self.graph, start, target_index)
+        else:
+            order, parents, levels = BFS_matrix(self.graph, start, target_index)
+
+        if generate_tree:
+            return order, parents, levels
+        return order
+
+    def DFS(self, start_node, generate_tree: bool = False):
+        """
+        Busca em profundidade a partir de `start_node` (rotulo 1-based).
+
+        Mesmo contrato de retorno da BFS: apenas a ordem, ou a tripla
+        (ordem, pais, niveis) quando generate_tree=True.
+        """
+        start = self._to_index(start_node)
+
         if self.adj_list:
-            return DFS_adj_list(self.graph, start_node, generate_tree)
-        return DFS_matrix(self.graph, start_node, generate_tree)
+            order, parents, levels = DFS_adj_list(self.graph, start)
+        else:
+            order, parents, levels = DFS_matrix(self.graph, start)
+
+        if generate_tree:
+            return order, parents, levels
+        return order
 
     # ------------------------------------------------------------------
     # Requisitos 2, 5 e 6 do enunciado.
@@ -49,6 +87,8 @@ class Graph():
 
     def distance(self, u, v):
         """Distancia entre os vertices u e v (rotulos 1-based). -1 se nao houver caminho."""
+        self._to_index(u)
+        self._to_index(v)
         return distance_mod.distance(self.graph, u, v, self.adj_list)
 
     def diameter(self, approximate: bool = False):
@@ -66,27 +106,25 @@ class Graph():
         return graph_stats.write_output(self.graph, output_path, self.adj_list)
 
     def write_search_tree(self, output_path, start_node, use_dfs: bool = False):
-        """Requisito 4: grava pai e nivel de cada vertice da arvore de busca."""
+        """Requisito 4: grava pai e nivel de cada vertice da arvore de busca
+        (start_node em rotulo 1-based)."""
         search = self.DFS if use_dfs else self.BFS
         _, parents, levels = search(start_node, generate_tree=True)
-        return graph_stats.write_search_tree(parents, levels, output_path, start_node)
+        return graph_stats.write_search_tree(parents, levels, output_path, start_node - 1)
 
 
 if __name__ == "__main__":
     graph_file = Path(__file__).resolve().parents[1] / "graph1.txt"
+
     print("\nGrafo 1 - Matriz de Adjacência")
     graph1 = Graph(graph_file)
     print(graph1)
-    #print(graph1.BFS(1, generate_tree=True))
-    print("DFS:")
-    print(graph1.DFS(1))
-    
+    print("BFS a partir do vertice 1:", graph1.BFS(1))
+    print("DFS a partir do vertice 1:", graph1.DFS(1))
+
     print("\nGrafo 1 - Lista de Adjacência")
     graph2 = Graph(graph_file, adj_list=True)
     print(graph2)
-    #print("DFS:")
-    #print(graph2.DFS(1, generate_tree=True))
-    #print(graph2.BFS(1, generate_tree=True))
-    print(graph2.Path(0,3))
-    
-    
+    print("BFS a partir do vertice 1:", graph2.BFS(1))
+    print("DFS a partir do vertice 1:", graph2.DFS(1))
+    print("Distancia entre os vertices 1 e 4:", graph2.distance(1, 4))
