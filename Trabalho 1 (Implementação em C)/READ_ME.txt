@@ -68,9 +68,12 @@ Outros alvos (constroem, se precisar, e RODAM o programa - veja secao 5):
     make components_demo  make distance_demo  make graph_stats_demo
 
 Estudos de caso (secao 4 do enunciado - veja secao 6):
-    make casos           -> compila os 6 programas das questoes (bin/questao*)
+    make casos           -> compila os programas das questoes (bin/questao*)
+                            e o dos arquivos de saida (bin/saida)
+    make estudos         -> roda todos os estudos de caso nos grafos de
+                            ../Grafos e gera resultados/tabelas.md
     make questao1  make questao2_3  make questao4
-    make questao5  make questao6  make questao7
+    make questao5  make questao6  make questao7  make saida
 
 Os executaveis ficam em bin/, mas devem rodar A PARTIR DESTA PASTA (a
 raiz), pois usam caminhos relativos (por exemplo, o demo "graph" le
@@ -208,8 +211,9 @@ None do Python (sem pai / nao alcancado).
 --------------------------------------------------------------------------------
 5. PROGRAMAS INCLUIDOS
 --------------------------------------------------------------------------------
-    ./bin/test_parte1      Testes da Parte 1 (74 verificacoes). Entrada:
-                           graph_exemplo.txt e graph_teste_desconexo.txt.
+    ./bin/test_parte1      Testes da Parte 1 (176 verificacoes). Entrada:
+                           graph_exemplo.txt, graph_teste_desconexo.txt e
+                           graph_teste_lacos_duplicatas.txt.
     ./bin/graph            Demo da classe Graph; le ../graph1.txt.
     ./bin/my_queue_demo    Demo da fila (my_queue.py).
     ./bin/my_stack_demo    Demo da pilha (my_stack.py).
@@ -218,12 +222,14 @@ None do Python (sem pai / nao alcancado).
     ./bin/graph_stats_demo Demo do requisito 2; gera saida_exemplo.txt.
 
 Programas dos estudos de caso (secao 6; fontes na pasta "Study cases"):
-    ./bin/questao1         Q1: memoria das duas representacoes (pausa manual).
+    ./bin/questao1         Q1: memoria das duas representacoes (medida + pausa).
     ./bin/questao2_3       Q2/Q3: tempo medio de 100 BFS e 100 DFS.
     ./bin/questao4         Q4: pais de 10/20/30 nas arvores BFS/DFS (raizes 1/2/3).
     ./bin/questao5         Q5: distancias (10,20), (10,30), (20,30).
     ./bin/questao6         Q6: componentes conexas (numero, maior, menor).
     ./bin/questao7         Q7: diametro exato e/ou aproximado.
+    ./bin/saida            Requisitos 2 e 4 nos grafos do estudo: estatisticas
+                           e arquivos de saida.
 
 Atalho: `make <nome>` tambem constroi (se precisar) e roda cada programa -
 por exemplo, `make graph` roda o demo e `make test_parte1` roda os testes
@@ -241,49 +247,81 @@ demos da biblioteca NAO servem para os grafos do estudo de caso (imprimem a
 representacao inteira; alem disso, a matriz de um grafo com ~50 mil
 vertices ocupa ~10GB).
 
-Resumo rapido (todos recebem <grafo.txt> <matriz|lista> e rodem da raiz):
+Os grafos do estudo de caso (grafo_1.txt a grafo_6.txt, do site da
+disciplina) ficam na pasta Grafos, na raiz do repositorio. A pasta nao e
+versionada: os arquivos somam cerca de 1 GB.
 
-    questao  o que faz                                        fonte (Study cases/)
-    1        memoria: pausa "Measure memory." apos carregar      questao1_memoria.c
-    2 e 3    tempo medio de 100 BFS e 100 DFS                   questao2_3_buscas.c
-    4        pais de 10/20/30 nas arvores BFS/DFS (raizes 1-3)  questao4_pais.c
-    5        distancias (10,20), (10,30), (20,30)               questao5_distancias.c
-    6        componentes conexas: numero, maior, menor           questao6_componentes.c
-    7        diametro exato e/ou aproximado                      questao7_diametro.c
+(a) TODOS OS ESTUDOS DE UMA VEZ
 
-Compilar todos de uma vez:
+    make estudos
+    (o mesmo que: bash "Study cases/rodar_estudos.sh" ../Grafos resultados)
 
-    make casos           (ou make questao1, make questao2_3, ... individualmente)
+    Roda as questoes 1 a 7 em cada grafo, nas duas representacoes, e grava:
 
-Exemplos com o grafo do estudo de caso (fica na raiz do repositorio):
+        resultados/tabelas.md      uma tabela por questao (grafos nas linhas)
+        resultados/ambiente.txt    maquina, compilador e flags usados
+        resultados/brutos/<grafo>/<lista|matriz>/
+                                   saida de cada programa
+        resultados/saidas/         arquivos dos requisitos 2 e 4 (nao
+                                   versionados: chegam a dezenas de MB)
 
-    ./bin/questao1 ../graph123.txt lista
-        Q1: carrega o grafo e pausa ("Measure memory.") para a medicao
-        manual de memoria em outra janela (top/pmap); ENTER encerra. Rode
-        uma vez com "lista" e outra com "matriz" para comparar as duas.
+    A matriz so e carregada quando cabe na memoria disponivel; se nao couber,
+    a tabela mostra "inviavel" e quanto ela precisaria. O diametro exato (BFS
+    de cada vertice) so roda na lista e em grafos com ate 60000 vertices.
+    Variaveis de ambiente: BUSCAS (padrao 100) e DIAMETRO_EXATO_MAX.
+    As tabelas podem ser refeitas sem rodar tudo de novo:
+        python3 "Study cases/gerar_tabelas.py" resultados
 
-    ./bin/questao2_3 ../graph123.txt lista [n_buscas]
+(b) UMA QUESTAO POR VEZ
+
+Resumo (todos recebem <grafo.txt> <matriz|lista> e rodam desta pasta):
+
+    programa    o que faz                                         fonte (Study cases/)
+    questao1    memoria residente antes/depois de carregar        questao1_memoria.c
+    questao2_3  tempo medio de 100 BFS e 100 DFS                  questao2_3_buscas.c
+    questao4    pais de 10/20/30 nas arvores BFS/DFS (raizes 1-3) questao4_pais.c
+    questao5    distancias (10,20), (10,30), (20,30)              questao5_distancias.c
+    questao6    componentes conexas: numero, maior, menor          questao6_componentes.c
+    questao7    diametro exato e/ou aproximado                     questao7_diametro.c
+    saida       estatisticas + arquivos dos requisitos 2 e 4       saida_arquivos.c
+
+Exemplos com um grafo do estudo de caso:
+
+    ./bin/questao1 ../Grafos/grafo_1.txt lista [pausa|auto]
+        Q1: mede a memoria residente do processo (VmRSS) antes e depois de
+        carregar o grafo e imprime a diferenca; na matriz, tambem o tamanho
+        alocado (paginas da matriz que nunca recebem uma aresta nao chegam
+        a ocupar memoria fisica). "pausa" (padrao) espera ENTER, para
+        conferir no top/pmap em outra janela; "auto" encerra em seguida.
+        Rode uma vez com "lista" e outra com "matriz".
+
+    ./bin/questao2_3 ../Grafos/grafo_1.txt lista [n_buscas]
         Q2/Q3: n_buscas (padrao 100) buscas BFS e DFS partindo de vertices
         distintos; imprime apenas o tempo medio/min/max de cada busca
         (o cronometro cobre so o algoritmo, como pede o enunciado).
 
-    ./bin/questao4 ../graph123.txt lista
+    ./bin/questao4 ../Grafos/grafo_1.txt lista
         Q4: pai dos vertices 10, 20 e 30 nas arvores BFS e DFS partindo
-        dos vertices 1, 2 e 3 ('-' = fora da componente da raiz). Os pais
-        da BFS podem diferir entre matriz e lista (arvores distintas);
-        os da DFS sao iguais nas duas representacoes.
+        dos vertices 1, 2 e 3 ('-' = fora da componente da raiz). Como os
+        vizinhos sao visitados em ordem crescente nas duas representacoes,
+        matriz e lista dao os mesmos pais.
 
-    ./bin/questao5 ../graph123.txt lista
+    ./bin/questao5 ../Grafos/grafo_1.txt lista
         Q5: distancias d(10,20), d(10,30) e d(20,30). -1 indica que o
         par esta em componentes distintas.
 
-    ./bin/questao6 ../graph123.txt lista
+    ./bin/questao6 ../Grafos/grafo_1.txt lista
         Q6: numero de componentes conexas, tamanho da maior e da menor.
 
-    ./bin/questao7 ../graph123.txt lista [exato|aproximado|ambos]
+    ./bin/questao7 ../Grafos/grafo_1.txt lista [exato|aproximado|ambos]
         Q7: diametro. "aproximado" (padrao) usa a dupla varredura - rapido
         e cota inferior; "exato" faz BFS de cada vertice (so para grafos
         pequenos/medios); "ambos" roda os dois.
+
+    ./bin/saida ../Grafos/grafo_1.txt lista <pasta>
+        Imprime n, m e as estatisticas de grau, e grava na pasta
+        grafo_1_saida.txt (requisito 2) e grafo_1_arvore_bfs.txt e
+        grafo_1_arvore_dfs.txt (requisito 4, buscas a partir do vertice 1).
 
 Atencao: para grafos grandes, a representacao em matriz pode nao caber em
 memoria (n^2 inteiros). Use-a apenas onde for viavel - a comparacao de
