@@ -1,0 +1,15 @@
+# ambiente virtual e caches do Python
+.venv/
+__pycache__/
+*.pyc
+
+# executaveis gerados pelo make (recrie com `make all casos`)
+Trabalho 1 (Implementação em C)/bin/
+*.o
+
+# grafos do estudo de caso (centenas de MB; baixe do site da disciplina)
+Grafos/
+
+# arquivos grandes gerados pelos estudos de caso (saida do requisito 2 e
+# arvores de busca); as tabelas e as saidas dos programas ficam versionadas
+Trabalho 1 (Implementação em C)/resultados/saidas/
