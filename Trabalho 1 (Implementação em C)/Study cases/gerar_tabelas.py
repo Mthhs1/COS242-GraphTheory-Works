@@ -106,13 +106,13 @@ for g in grafos:
     mtx = ler(g, "matriz", "q1_memoria.txt")
     linhas.append([g, br(lista),
                    inviavel(g, "matriz") or br(numero(mtx, r"memoria do grafo \(diferenca\): ([\d.]+) MB")),
-                   inviavel(g, "matriz") or br(numero(mtx, r"alocado para a matriz \(n\*n inteiros\): ([\d.]+) MB"))])
+                   inviavel(g, "matriz") or br(numero(mtx, r"alocado para a matriz[^:]*: ([\d.]+) MB"))])
 secoes.append(tabela("Questão 1 — memória (MB)",
                      ["Grafo", "Lista", "Matriz (residente)", "Matriz (alocada)"], linhas,
                      "Memória residente do processo (VmRSS) depois de carregar menos a de antes. Na matriz, "
                      "páginas que nunca recebem uma aresta não chegam a ocupar memória física, por isso a "
-                     "coluna \"alocada\" mostra o tamanho reservado (n² inteiros). \"Inviável\" = a matriz não "
-                     "cabe na memória disponível da máquina."))
+                     "coluna \"alocada\" mostra o tamanho reservado (n² células de 1 byte). \"Inviável\" = a "
+                     "matriz não cabe na memória disponível da máquina."))
 
 # Q2 e Q3
 linhas = []

@@ -163,15 +163,15 @@ Node **create_list_graph(const char *archive_directory, int *n_out) {
     return graph;
 }
 
-int **create_empty_matrix_graph(int n) {
-    int **graph = xmalloc((size_t)n * sizeof(int *));
+MatrixCell **create_empty_matrix_graph(int n) {
+    MatrixCell **graph = xmalloc((size_t)n * sizeof(MatrixCell *));
     for (int i = 0; i < n; i++) {
-        graph[i] = xcalloc((size_t)n, sizeof(int));
+        graph[i] = xcalloc((size_t)n, sizeof(MatrixCell));
     }
     return graph;
 }
 
-int **create_matrix_graph(const char *archive_directory, int *n_out) {
+MatrixCell **create_matrix_graph(const char *archive_directory, int *n_out) {
     FILE *file = fopen(archive_directory, "r");
     if (file == NULL) {
         fprintf(stderr, "arquivo nao encontrado: %s\n", archive_directory);
@@ -187,7 +187,7 @@ int **create_matrix_graph(const char *archive_directory, int *n_out) {
         fprintf(stderr, "arquivo invalido: %s\n", archive_directory);
         exit(EXIT_FAILURE);
     }
-    int **graph = create_empty_matrix_graph(n);
+    MatrixCell **graph = create_empty_matrix_graph(n);
 
     /* CORRECAO: o arquivo tem n vertices na 1a linha e depois m arestas,
        uma por linha. O laco antigo lia n linhas de aresta, o que so
@@ -225,7 +225,7 @@ char *str_adj_list(Node **graph, int n) {
     return strbuf_finish(&result);
 }
 
-char *str_matrix(int **graph, int n) {
+char *str_matrix(MatrixCell **graph, int n) {
     StrBuf result = {NULL, 0, 0};
     for (int i = 0; i < n; i++) {
         strbuf_appendf(&result, "[");
@@ -250,7 +250,7 @@ void free_list_graph(Node **graph, int n) {
     free(graph);
 }
 
-void free_matrix_graph(int **graph, int n) {
+void free_matrix_graph(MatrixCell **graph, int n) {
     for (int i = 0; i < n; i++) {
         free(graph[i]);
     }

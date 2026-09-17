@@ -110,7 +110,7 @@ int *neighbors(Graph *g, int v, int *count_out) {
         return vizinhos;
     }
 
-    int *row = g->graph.matrix[v];
+    MatrixCell *row = g->graph.matrix[v];
     for (int u = 0; u < g->n; u++) {
         if (row[u] == 1) {
             count += 1;

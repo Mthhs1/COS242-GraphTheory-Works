@@ -60,7 +60,7 @@ GraphSearch *BFS_adj_list(Node **graph, int n, int start_node, int target) {
     return search;
 }
 
-GraphSearch *BFS_matrix(int **graph, int n, int start_node, int target) {
+GraphSearch *BFS_matrix(MatrixCell **graph, int n, int start_node, int target) {
     Queue queue;
     Queue_init(&queue);
     int *vector = xcalloc((size_t)n, sizeof(int));

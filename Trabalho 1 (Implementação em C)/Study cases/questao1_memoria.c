@@ -101,8 +101,9 @@ int main(int argc, char **argv) {
                 (antes < 0 || depois < 0) ? -1.0 : (double)(depois - antes));
     imprimir_mb("pico de memoria residente (VmHWM)", (double)memoria_kb("VmHWM"));
     if (!adj_list) {
-        double bytes = (double)g->n * g->n * sizeof(int) + (double)g->n * sizeof(int *);
-        imprimir_mb("alocado para a matriz (n*n inteiros)", bytes / 1024.0);
+        double bytes = (double)g->n * g->n * sizeof(MatrixCell)
+                       + (double)g->n * sizeof(MatrixCell *);
+        imprimir_mb("alocado para a matriz (n*n celulas de 1 byte)", bytes / 1024.0);
     }
 
     if (pausar) {

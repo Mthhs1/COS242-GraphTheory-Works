@@ -16,7 +16,7 @@
 #     DIAMETRO_EXATO_MAX=60000 diametro exato (BFS de cada vertice) so na lista
 #                              e em grafos com ate esse numero de vertices
 #
-# A matriz so e carregada quando cabe na memoria disponivel (n*n inteiros);
+# A matriz so e carregada quando cabe na memoria disponivel (n*n bytes);
 # senao, a representacao fica registrada como inviavel.
 
 set -u
@@ -77,7 +77,7 @@ for arquivo in "${ARQUIVOS[@]}"; do
         mkdir -p "$dir"
 
         if [ "$rep" = matriz ]; then
-            necessario=$(( n * n * 4 + n * 8 ))
+            necessario=$(( n * n + n * 8 ))  # 1 byte por celula (MatrixCell)
             disponivel=$(( $(awk '/MemAvailable/ {print $2}' /proc/meminfo) * 1024 ))
             if [ "$necessario" -gt $(( disponivel / 10 * 8 )) ]; then
                 printf 'inviavel: a matriz precisaria de %d MB; memoria disponivel: %d MB\n' \

@@ -11,6 +11,6 @@ a busca encerra assim que ele sai da fila.
 */
 
 GraphSearch *BFS_adj_list(Node **graph, int n, int start_node, int target);
-GraphSearch *BFS_matrix(int **graph, int n, int start_node, int target);
+GraphSearch *BFS_matrix(MatrixCell **graph, int n, int start_node, int target);
 
 #endif

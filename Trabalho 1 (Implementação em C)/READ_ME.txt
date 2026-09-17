@@ -244,8 +244,8 @@ arquivo ADAPTACOES_C.txt, nesta mesma pasta.
 --------------------------------------------------------------------------------
 Programas dedicados, na pasta "Study cases", um arquivo por questao. Os
 demos da biblioteca NAO servem para os grafos do estudo de caso (imprimem a
-representacao inteira; alem disso, a matriz de um grafo com ~50 mil
-vertices ocupa ~10GB).
+representacao inteira; alem disso, a matriz de um grafo com ~375 mil
+vertices ocupa ~140 GB).
 
 Os grafos do estudo de caso (grafo_1.txt a grafo_6.txt, do site da
 disciplina) ficam na pasta Grafos, na raiz do repositorio. A pasta nao e
@@ -324,5 +324,5 @@ Exemplos com um grafo do estudo de caso:
         grafo_1_arvore_dfs.txt (requisito 4, buscas a partir do vertice 1).
 
 Atencao: para grafos grandes, a representacao em matriz pode nao caber em
-memoria (n^2 inteiros). Use-a apenas onde for viavel - a comparacao de
+memoria (n^2 bytes). Use-a apenas onde for viavel - a comparacao de
 memoria e justamente o objeto da Questao 1.

@@ -12,12 +12,20 @@ interna vira uma uniao com o mesmo nome `graph`, e o numero de
 vertices (len(graph) no Python) fica explicito no campo n.
 */
 
+/*
+Celula da matriz de adjacencia: guarda 0 ou 1, entao 1 byte basta. Com int
+(4 bytes) a matriz do grafo_2 do estudo de caso precisaria de 9,3 GB e nao
+cabia na memoria da maquina; com 1 byte sao 2,3 GB. Como o consumo cresce
+com n^2, cada byte por celula decide se o grafo cabe ou nao.
+*/
+typedef unsigned char MatrixCell;
+
 typedef struct Graph {
     int n;
     bool adj_list;
     union {
-        Node **list;  /* self.graph quando adj_list == true  */
-        int **matrix; /* self.graph quando adj_list == false */
+        Node **list;         /* self.graph quando adj_list == true  */
+        MatrixCell **matrix; /* self.graph quando adj_list == false */
     } graph;
 } Graph;
 
