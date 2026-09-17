@@ -5,11 +5,11 @@
 #include "graph_gen.h"
 #include "graph_utils.h"
 
-static int comparar_descendente(const void *x, const void *y) {
+static int comparar_ascendente(const void *x, const void *y) {
     int a = *(const int *)x;
     int b = *(const int *)y;
-    if (a > b) return -1;
-    if (a < b) return 1;
+    if (a < b) return -1;
+    if (a > b) return 1;
     return 0;
 }
 
@@ -117,16 +117,32 @@ Node **create_list_graph(const char *archive_directory, int *n_out) {
         a -= 1;
         b -= 1;
 
+        /* laco ("v v"): ignorado. O grafo e tratado como simples - antes o
+           laco somava 2 ao grau na lista e 1 na matriz, e as representacoes
+           reportavam graus e numeros de arestas diferentes. */
+        if (a == b) {
+            continue;
+        }
+
         neighbor_append(neighbor, neighbor_len, neighbor_cap, a, b);
         neighbor_append(neighbor, neighbor_len, neighbor_cap, b, a);
     }
     fclose(file);
 
     for (int i = 0; i < n; i++) {
-        /* neighbor[i].sort(reverse=True) */
-        qsort(neighbor[i], (size_t)neighbor_len[i], sizeof(int), comparar_descendente);
+        /* Vizinhos em ordem CRESCENTE: a BFS percorre a lista nessa ordem, a
+           mesma da BFS_matrix (for 0..n-1), e as duas representacoes geram a
+           mesma arvore. Com a lista decrescente, os empates de nivel eram
+           resolvidos de forma diferente e os pais da BFS divergiam. */
+        qsort(neighbor[i], (size_t)neighbor_len[i], sizeof(int), comparar_ascendente);
 
         for (int j = 0; j < neighbor_len[i]; j++) {
+            /* aresta repetida no arquivo ("a b" duas vezes, ou "a b" e "b a"):
+               com o vetor ordenado a copia fica logo apos a original e e
+               descartada - a matriz ja fundia as duplicatas */
+            if (j > 0 && neighbor[i][j] == neighbor[i][j - 1]) {
+                continue;
+            }
             if (last_nodes[i] == NULL) {
                 graph[i]->next = Node_create(neighbor[i][j], NULL);
                 last_nodes[i] = graph[i]->next;
@@ -180,6 +196,11 @@ int **create_matrix_graph(const char *archive_directory, int *n_out) {
     while (ler_inteiro(&leitor, &a) && ler_inteiro(&leitor, &b)) {
         a -= 1;
         b -= 1;
+
+        /* laco ignorado, como na lista de adjacencia (grafo simples) */
+        if (a == b) {
+            continue;
+        }
 
         graph[a][b] = 1;
         graph[b][a] = 1;

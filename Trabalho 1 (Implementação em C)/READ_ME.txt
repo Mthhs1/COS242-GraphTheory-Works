@@ -28,11 +28,16 @@ graph_exemplo.txt nesta pasta).
 Observacoes sobre o formato:
 - O numero de arestas (m) NAO precisa ser igual ao numero de vertices.
 - Como o grafo e nao-direcionado, "a b" cria a aresta nos dois sentidos
-  (nao repita "b a" no arquivo).
+  (nao e preciso repetir "b a" no arquivo).
 - Vertices isolados simplesmente nao aparecem em nenhuma linha de aresta.
 - Linhas em branco sao ignoradas.
-- Evite arestas duplicadas no arquivo: a representacao em matriz as
-  funde em uma so, mas a lista de adjacencia as guardaria duplicadas.
+- Lacos ("3 3") e arestas repetidas ("1 2" duas vezes, ou "1 2" e
+  "2 1") sao IGNORADOS na leitura: o grafo e tratado como simples, e as
+  duas representacoes produzem os mesmos graus e o mesmo numero de
+  arestas. Os grafos do estudo de caso contem lacos e duplicatas.
+- Nas buscas (BFS e DFS), os vizinhos sao visitados em ordem CRESCENTE
+  de rotulo, nas duas representacoes - por isso matriz e lista geram
+  exatamente a mesma arvore.
 
 
 --------------------------------------------------------------------------------
