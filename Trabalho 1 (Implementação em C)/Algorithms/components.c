@@ -128,27 +128,29 @@ char *summary(Graph *g) {
     /* Resumo textual das componentes, no formato usado no arquivo de saida. */
     Components components = connected_components(g);
 
-    char *text = str_append(NULL, "Numero de componentes conexas: %d", components.count);
+    /* um append por vertice: StrBuf mantem o custo linear */
+    StrBuf text = {NULL, 0, 0};
+    strbuf_appendf(&text, "Numero de componentes conexas: %d", components.count);
 
     if (components.count > 0) {
-        text = str_append(text, "\nMaior componente: %d vertices", components.sizes[0]);
-        text = str_append(text, "\nMenor componente: %d vertices",
-                          components.sizes[components.count - 1]);
+        strbuf_appendf(&text, "\nMaior componente: %d vertices", components.sizes[0]);
+        strbuf_appendf(&text, "\nMenor componente: %d vertices",
+                       components.sizes[components.count - 1]);
     }
 
-    text = str_append(text, "\n");
+    strbuf_appendf(&text, "\n");
     for (int index = 0; index < components.count; index++) {
-        text = str_append(text, "\nComponente %d (%d vertices):", index + 1,
-                          components.sizes[index]);
-        text = str_append(text, "\n  ");
+        strbuf_appendf(&text, "\nComponente %d (%d vertices):", index + 1,
+                       components.sizes[index]);
+        strbuf_appendf(&text, "\n  ");
         for (int j = 0; j < components.sizes[index]; j++) {
-            text = str_append(text, (j == 0) ? "%d" : " %d",
-                              components.components[index][j]);
+            strbuf_appendf(&text, (j == 0) ? "%d" : " %d",
+                           components.components[index][j]);
         }
     }
 
     Components_free(&components);
-    return text;
+    return strbuf_finish(&text);
 }
 
 void Components_free(Components *components) {

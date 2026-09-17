@@ -94,7 +94,11 @@ que a linguagem C exige ou nao oferece.
   concatenacao com f-strings do Python (texto += f"..."); devolve o novo
   buffer (realloc interno).
 - str_adj_list/str_matrix, summary, stats_text, write_output e
-  write_search_tree constroem strings com str_append e devolvem malloc'd.
+  write_search_tree constroem strings e devolvem malloc'd. Os que fazem
+  um append por vertice ou por aresta (str_adj_list, str_matrix, summary e
+  write_search_tree) usam StrBuf, que guarda tamanho e capacidade: com
+  str_append, que mede o texto inteiro a cada chamada, o arquivo de saida
+  do grafo_3 levava 6,4 s e o do grafo_6 levaria horas.
 - A leitura do arquivo e bufferizada (Leitor/ler_inteiro em graph_gen.c):
   a primeira linha e o n, e os pares "a b" sao lidos ate o fim do arquivo,
   com a mesma semantica do fscanf %d - mas bem mais rapida (os arquivos dos

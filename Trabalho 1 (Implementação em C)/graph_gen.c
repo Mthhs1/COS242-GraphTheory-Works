@@ -212,29 +212,29 @@ int **create_matrix_graph(const char *archive_directory, int *n_out) {
 }
 
 char *str_adj_list(Node **graph, int n) {
-    char *result = NULL;
+    StrBuf result = {NULL, 0, 0};
     for (int i = 0; i < n; i++) {
-        result = str_append(result, "%d: ", i);
+        strbuf_appendf(&result, "%d: ", i);
         Node *current_node = graph[i]->next;
         while (current_node != NULL) {
-            result = str_append(result, "%d -> ", current_node->value);
+            strbuf_appendf(&result, "%d -> ", current_node->value);
             current_node = current_node->next;
         }
-        result = str_append(result, "None\n");
+        strbuf_appendf(&result, "None\n");
     }
-    return result;
+    return strbuf_finish(&result);
 }
 
 char *str_matrix(int **graph, int n) {
-    char *result = NULL;
+    StrBuf result = {NULL, 0, 0};
     for (int i = 0; i < n; i++) {
-        result = str_append(result, "[");
+        strbuf_appendf(&result, "[");
         for (int j = 0; j < n; j++) {
-            result = str_append(result, (j == 0) ? "%d" : ", %d", graph[i][j]);
+            strbuf_appendf(&result, (j == 0) ? "%d" : ", %d", graph[i][j]);
         }
-        result = str_append(result, "]\n");
+        strbuf_appendf(&result, "]\n");
     }
-    return result;
+    return strbuf_finish(&result);
 }
 
 void free_list_graph(Node **graph, int n) {
