@@ -1,0 +1,4 @@
+grafo: ../Grafos/grafo_1.txt | representacao: lista de adjacencia
+Numero de componentes conexas: 1
+Maior componente: 10000 vertices
+Menor componente: 10000 vertices

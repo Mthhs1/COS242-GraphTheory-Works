@@ -1,0 +1,10 @@
+grafo: ../Grafos/grafo_1.txt | representacao: lista de adjacencia
+Numero de vertices: 10000
+Numero de arestas: 109921
+Grau minimo: 8
+Grau maximo: 43
+Grau medio: 21.9842
+Mediana de grau: 22.0
+arquivo de saida (requisito 2): /root/cos242/res_final/saidas/grafo_1_saida.txt  (5.8 ms)
+arvore BFS a partir de 1 (requisito 4): /root/cos242/res_final/saidas/grafo_1_arvore_bfs.txt  (4.7 ms)
+arvore DFS a partir de 1 (requisito 4): /root/cos242/res_final/saidas/grafo_1_arvore_dfs.txt  (7.8 ms)

@@ -1,0 +1,3 @@
+grafo: ../Grafos/grafo_1.txt | representacao: matriz de adjacencia | 100 buscas por tipo
+BFS  media: 42.8062 ms (min 38.1183, max 58.5052)
+DFS  media: 46.0505 ms (min 40.7959, max 77.3176)

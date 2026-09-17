@@ -1,0 +1,4 @@
+grafo: ../Grafos/grafo_6.txt | representacao: lista de adjacencia
+d(10,20) = 5
+d(10,30) = 5
+d(20,30) = 5

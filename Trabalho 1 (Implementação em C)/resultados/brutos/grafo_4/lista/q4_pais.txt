@@ -1,0 +1,10 @@
+grafo: ../Grafos/grafo_4.txt | representacao: lista de adjacencia
+pai dos vertices 10, 20 e 30 ('-' = fora da componente da raiz)
+
+busca  raiz    pai(10)  pai(20)  pai(30)
+BFS    1        243865   370783   136244
+BFS    2             -        -        -
+BFS    3             -        -        -
+DFS    1         12269    10738     1531
+DFS    2             -        -        -
+DFS    3             -        -        -
