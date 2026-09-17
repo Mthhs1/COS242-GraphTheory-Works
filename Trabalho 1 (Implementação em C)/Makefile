@@ -87,11 +87,20 @@ questao6: | $(BIN)
 questao7: | $(BIN)
 	$(CC) $(CFLAGS) -o $(BIN)/questao7 "$(CASOS)/questao7_diametro.c" $(LIB)
 
-casos: questao1 questao2_3 questao4 questao5 questao6 questao7
+# requisitos 2 e 4 nos grafos do estudo de caso: estatisticas e arquivos de saida
+saida: | $(BIN)
+	$(CC) $(CFLAGS) -o $(BIN)/saida "$(CASOS)/saida_arquivos.c" $(LIB)
+
+casos: questao1 questao2_3 questao4 questao5 questao6 questao7 saida
+
+# roda todos os estudos de caso nos grafos de GRAFOS e gera resultados/tabelas.md
+GRAFOS = ../Grafos
+estudos: all casos
+	bash "$(CASOS)/rodar_estudos.sh" "$(GRAFOS)" resultados
 
 clean:
 	rm -rf $(BIN)
 
 .PHONY: all test clean test_parte1 graph my_queue_demo my_stack_demo \
         components_demo distance_demo graph_stats_demo \
-        questao1 questao2_3 questao4 questao5 questao6 questao7 casos
+        questao1 questao2_3 questao4 questao5 questao6 questao7 saida casos estudos

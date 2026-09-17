@@ -31,4 +31,25 @@ void *xrealloc(void *ptr, size_t size);
 /* Concatenacao estilo `texto += f"..."` do Python; devolve o novo buffer */
 char *str_append(char *buffer, const char *format, ...);
 
+/*
+Texto montado por muitas concatenacoes (arquivos de saida, representacao do
+grafo). str_append mede o texto inteiro (strlen) e realoca a cada chamada, o
+que deixa quadratico um laco com um append por vertice: nos grafos do estudo
+de caso, o arquivo de saida levava segundos (grafo_3) ou horas (grafo_6).
+StrBuf guarda tamanho e capacidade e dobra a capacidade quando falta espaco,
+entao o custo total e linear no tamanho do texto.
+
+    StrBuf texto = {NULL, 0, 0};
+    strbuf_appendf(&texto, "%d ", v);
+    char *resultado = strbuf_finish(&texto);  // nunca NULL; libere com free()
+*/
+typedef struct StrBuf {
+    char *data;
+    size_t len;
+    size_t cap;
+} StrBuf;
+
+void strbuf_appendf(StrBuf *buffer, const char *format, ...);
+char *strbuf_finish(StrBuf *buffer);
+
 #endif

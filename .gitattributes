@@ -1,0 +1,5 @@
+# scripts e Makefile precisam de LF para rodar no Linux, mesmo quando o
+# repositorio e clonado no Windows com core.autocrlf=true
+*.sh      text eol=lf
+*.py      text eol=lf
+Makefile  text eol=lf

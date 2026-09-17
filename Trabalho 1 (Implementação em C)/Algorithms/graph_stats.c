@@ -115,7 +115,8 @@ char *write_search_tree(int *parents, int *levels, int n, const char *output_pat
     `parents` e `levels` sao os vetores devolvidos por BFS/DFS com
     generate_tree, indexados em 0.
     */
-    char *content = str_append(NULL, "Raiz da busca: %d\n\nvertice pai nivel\n", root + 1);
+    StrBuf buffer = {NULL, 0, 0}; /* uma linha por vertice: custo linear */
+    strbuf_appendf(&buffer, "Raiz da busca: %d\n\nvertice pai nivel\n", root + 1);
 
     for (int vertex = 0; vertex < n; vertex++) {
         if (levels[vertex] == -1 && vertex != root) {
@@ -124,11 +125,12 @@ char *write_search_tree(int *parents, int *levels, int n, const char *output_pat
 
         int parent = parents[vertex];
         if (parent == -1) { /* None no Python */
-            content = str_append(content, "%d - %d\n", vertex + 1, levels[vertex]);
+            strbuf_appendf(&buffer, "%d - %d\n", vertex + 1, levels[vertex]);
         } else {
-            content = str_append(content, "%d %d %d\n", vertex + 1, parent + 1, levels[vertex]);
+            strbuf_appendf(&buffer, "%d %d %d\n", vertex + 1, parent + 1, levels[vertex]);
         }
     }
+    char *content = strbuf_finish(&buffer);
 
     FILE *file = fopen(output_path, "w");
     if (file == NULL) {

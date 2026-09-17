@@ -50,6 +50,43 @@ char *str_append(char *buffer, const char *format, ...) {
     return buffer;
 }
 
+void strbuf_appendf(StrBuf *buffer, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    int needed = vsnprintf(NULL, 0, format, args);
+    va_end(args);
+    if (needed < 0) {
+        return;
+    }
+
+    size_t required = buffer->len + (size_t)needed + 1;
+    if (required > buffer->cap) {
+        size_t cap = (buffer->cap == 0) ? 256 : buffer->cap;
+        while (cap < required) {
+            cap *= 2;
+        }
+        buffer->data = xrealloc(buffer->data, cap);
+        buffer->cap = cap;
+    }
+
+    va_start(args, format);
+    vsnprintf(buffer->data + buffer->len, (size_t)needed + 1, format, args);
+    va_end(args);
+    buffer->len += (size_t)needed;
+}
+
+char *strbuf_finish(StrBuf *buffer) {
+    if (buffer->data == NULL) {
+        buffer->data = xmalloc(1);
+        buffer->data[0] = '\0';
+    }
+    char *text = buffer->data;
+    buffer->data = NULL;
+    buffer->len = 0;
+    buffer->cap = 0;
+    return text;
+}
+
 int *neighbors(Graph *g, int v, int *count_out) {
     int count = 0;
 
@@ -73,7 +110,7 @@ int *neighbors(Graph *g, int v, int *count_out) {
         return vizinhos;
     }
 
-    int *row = g->graph.matrix[v];
+    MatrixCell *row = g->graph.matrix[v];
     for (int u = 0; u < g->n; u++) {
         if (row[u] == 1) {
             count += 1;

@@ -78,7 +78,7 @@ GraphSearch *DFS_adj_list(Node **graph, int n, int start_node) {
     return search;
 }
 
-GraphSearch *DFS_matrix(int **graph, int n, int start_node) {
+GraphSearch *DFS_matrix(MatrixCell **graph, int n, int start_node) {
     Stack stack;
     Stack_init(&stack);
     int *vector = xcalloc((size_t)n, sizeof(int));

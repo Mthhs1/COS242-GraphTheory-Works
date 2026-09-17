@@ -1,0 +1,5 @@
+Grafo carregado: 4843750 vertices | representacao: lista de adjacencia
+memoria residente antes de carregar: 1.3 MB
+memoria residente depois de carregar: 3088.6 MB
+memoria do grafo (diferenca): 3087.2 MB
+pico de memoria residente (VmHWM): 3199.1 MB

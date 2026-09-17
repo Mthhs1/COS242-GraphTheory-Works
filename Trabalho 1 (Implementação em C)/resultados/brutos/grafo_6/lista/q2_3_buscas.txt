@@ -1,0 +1,3 @@
+grafo: ../Grafos/grafo_6.txt | representacao: lista de adjacencia | 100 buscas por tipo
+BFS  media: 2250.3199 ms (min 73.6402, max 3793.9453)
+DFS  media: 4167.7761 ms (min 126.7569, max 10877.1178)

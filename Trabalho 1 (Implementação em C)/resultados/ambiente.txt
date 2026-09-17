@@ -1,0 +1,9 @@
+data: 2026-09-17 17:55
+commit: f472062
+sistema: Linux 6.18.33.2-microsoft-standard-WSL2 x86_64
+processador: 12th Gen Intel(R) Core(TM) i5-12400F
+nucleos: 12
+memoria total: 7.7 GB
+compilador: gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
+flags: -std=c11 -Wall -Wextra -O2 -I. -IDataStructures -IAlgorithms
+buscas por tipo (Q2/Q3): 100

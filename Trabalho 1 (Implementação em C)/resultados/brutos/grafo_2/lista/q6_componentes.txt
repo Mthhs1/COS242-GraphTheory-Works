@@ -1,0 +1,4 @@
+grafo: ../Grafos/grafo_2.txt | representacao: lista de adjacencia
+Numero de componentes conexas: 10
+Maior componente: 25000 vertices
+Menor componente: 48 vertices
