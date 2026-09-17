@@ -122,8 +122,9 @@ que a linguagem C exige ou nao oferece.
 --------------------------------------------------------------------------------
 10. ORDENACAO
 --------------------------------------------------------------------------------
-- Python sort()/sorted() -> qsort() com comparadores
-  (comparar_descendente reproduz sort(reverse=True)).
+- Python sort()/sorted() -> qsort() com comparadores. (A lista de
+  adjacencia do Python usa sort(reverse=True); a do C passou a ser
+  crescente - ver item 13.)
 - components.sort(key=len, reverse=True) no Python E ESTAVEL (empates
   mantem a ordem de descoberta); qsort NAO e estavel, por isso a ordenacao
   por tamanho decrescente usa insertion sort, que e estavel como o Python.
@@ -162,3 +163,29 @@ que a linguagem C exige ou nao oferece.
   enunciado), pais de 10/20/30 nas arvores BFS/DFS partindo de 1/2/3 (Q4),
   distancias dos pares (10,20), (10,30), (20,30) (Q5), resumo das
   componentes conexas (Q6) e diametro exato/aproximado (Q7).
+
+--------------------------------------------------------------------------------
+13. CORRECOES POSTERIORES A TRANSCRICAO (so no C)
+--------------------------------------------------------------------------------
+Duas diferencas intencionais em relacao ao Python, encontradas ao rodar os
+grafos do estudo de caso:
+
+- Ordem dos vizinhos. A lista de adjacencia era ordenada de forma
+  DECRESCENTE, para a DFS empilhar o menor vizinho por ultimo. Mas a
+  BFS_adj_list percorre a lista nessa ordem, enquanto a BFS_matrix percorre
+  0..n-1: nos empates de nivel, cada representacao escolhia um pai
+  diferente (grafo_1, BFS a partir do vertice 1: 5831 dos 10000 vertices
+  com pai diferente). Agora a lista e CRESCENTE - a BFS fica igual nas duas
+  representacoes - e a DFS_adj_list empilha os vizinhos de tras para frente,
+  por um vetor auxiliar, como a DFS_matrix ja fazia com o for de n-1 a 0.
+  O resultado da DFS nao mudou.
+
+- Lacos e arestas duplicadas. Os seis grafos do estudo de caso tem os dois.
+  A matriz fundia as duplicatas e contava o laco uma vez no grau; a lista
+  guardava cada linha do arquivo. Por isso numero de arestas e graus saiam
+  diferentes entre as representacoes (grafo_1: 109923 na matriz, 109977 na
+  lista). Agora a leitura ignora lacos nas duas representacoes, e a lista
+  descarta vizinhos repetidos - com o vetor ja ordenado, a copia fica logo
+  depois da original. O grafo passa a ser tratado como simples.
+
+O prototipo em Python (pasta "Trabalho 1") nao recebeu essas correcoes.

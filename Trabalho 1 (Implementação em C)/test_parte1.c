@@ -7,9 +7,18 @@ Os valores esperados foram conferidos a mao a partir dos dois grafos de teste:
 
   graph_exemplo.txt          -> o grafo da Figura 1 do enunciado (n=5, m=5)
   graph_teste_desconexo.txt  -> n=7, m=5, tres componentes, um vertice isolado
+  graph_teste_lacos_duplicatas.txt
+                             -> n=5, m=5 depois de ignorar 2 lacos e 2 arestas
+                                repetidas; tem um empate de nivel na BFS
 
 O segundo grafo existe justamente porque m != n: o leitor original lia n linhas
 de aresta, e o exemplo do enunciado (onde m == n) mascarava esse erro.
+
+O terceiro existe porque os grafos do estudo de caso tem lacos e arestas
+duplicadas: a lista guardava cada linha do arquivo e a matriz as fundia, e as
+representacoes reportavam graus e numeros de arestas diferentes. O empate de
+nivel (o vertice 4 e vizinho de 2 e de 3, ambos no nivel 1) e o caso em que a
+ordem dos vizinhos decide o pai na BFS.
 
 A API publica usa rotulos 1-based (como no arquivo de entrada); os vetores
 devolvidos (ordem, pais, niveis) sao indexados em 0.
@@ -35,6 +44,7 @@ capturar o ValueError lancado pelo _to_index).
 
 #define EXEMPLO "graph_exemplo.txt"
 #define DESCONEXO "graph_teste_desconexo.txt"
+#define LACOS "graph_teste_lacos_duplicatas.txt"
 
 #define MAX_FALHAS 64
 #define MAX_MSG 256
@@ -221,6 +231,51 @@ static void testar_desconexo(bool adj_list) {
     Graph_destroy(g);
 }
 
+static void testar_lacos_e_duplicatas(bool adj_list) {
+    /* Arestas 1-2, 1-3, 2-4, 3-4 e 4-5, mais os lacos "3 3" e "5 5" e duas
+       repeticoes de 1-2 (uma escrita "2 1"). A biblioteca trata o grafo como
+       simples, entao os valores esperados valem para as duas representacoes. */
+    Graph *g = Graph_create(LACOS, adj_list);
+
+    int esperado_graus[5] = {2, 2, 2, 3, 1};
+    int *graus = all_degrees(g);
+    checar_array("graus sem lacos nem duplicatas", graus, esperado_graus, 5);
+    free(graus);
+
+    checar_int("numero de arestas (grafo simples)", edge_count(g), 5);
+
+    GraphStats s = graph_stats(g);
+    checar_int("grau minimo", s.grau_minimo, 1);
+    checar_int("grau maximo", s.grau_maximo, 3);
+    checar_double("grau medio", round4(s.grau_medio), 2.0);
+    checar_double("mediana de grau", s.mediana_grau, 2.0);
+
+    /* BFS a partir de 1 com vizinhos em ordem crescente: o 4 e descoberto
+       pelo 2, e nao pelo 3, embora os dois estejam no nivel 1 */
+    GraphSearch *bfs = Graph_BFS(g, 1, 1, 0);
+    int bfs_ordem[5] = {0, 1, 2, 3, 4};
+    int bfs_pais[5] = {-1, 0, 0, 1, 3};
+    int bfs_niveis[5] = {0, 1, 1, 2, 3};
+    checar_int("BFS alcanca os 5 vertices", bfs->count, 5);
+    checar_array("BFS ordem", bfs->result_discovered, bfs_ordem, 5);
+    checar_array("BFS pais (empate: menor rotulo)", bfs->parents, bfs_pais, 5);
+    checar_array("BFS niveis", bfs->levels, bfs_niveis, 5);
+    GraphSearch_free(bfs);
+
+    /* DFS a partir de 1: o menor vizinho nao visitado sai primeiro da pilha */
+    GraphSearch *dfs = Graph_DFS(g, 1, 1);
+    int dfs_ordem[5] = {0, 1, 3, 2, 4};
+    int dfs_pais[5] = {-1, 0, 3, 1, 3};
+    int dfs_niveis[5] = {0, 1, 3, 2, 3};
+    checar_int("DFS alcanca os 5 vertices", dfs->count, 5);
+    checar_array("DFS ordem", dfs->result_discovered, dfs_ordem, 5);
+    checar_array("DFS pais", dfs->parents, dfs_pais, 5);
+    checar_array("DFS niveis", dfs->levels, dfs_niveis, 5);
+    GraphSearch_free(dfs);
+
+    Graph_destroy(g);
+}
+
 static void testar_mediana(void) {
     int impar[3] = {1, 3, 2};
     checar_double("mediana impar", median(impar, 3), 2.0);
@@ -353,44 +408,47 @@ static void testar_rotulos_invalidos(void) {
 }
 
 static void testar_equivalencia_entre_representacoes(void) {
-    /* DFS gera a mesma arvore nas duas representacoes; na BFS, os niveis coincidem. */
-    Graph *gm = Graph_create(EXEMPLO, false);
-    Graph *gl = Graph_create(EXEMPLO, true);
+    /* As duas representacoes geram exatamente a mesma busca - mesma ordem,
+       mesmos pais e mesmos niveis - na BFS e na DFS. O grafo de lacos e
+       duplicatas tem um empate de nivel na BFS: com a lista em ordem
+       decrescente, a BFS da lista escolhia o pai 3 e a da matriz, o pai 2. */
+    const char *arquivos[2] = {EXEMPLO, LACOS};
     char descricao[MAX_MSG];
     char obt[MAX_MSG], esp[MAX_MSG];
 
-    for (int raiz = 1; raiz <= 5; raiz++) {
-        GraphSearch *dfs_m = Graph_DFS(gm, raiz, 1);
-        GraphSearch *dfs_l = Graph_DFS(gl, raiz, 1);
+    for (int f = 0; f < 2; f++) {
+        Graph *gm = Graph_create(arquivos[f], false);
+        Graph *gl = Graph_create(arquivos[f], true);
 
-        snprintf(descricao, MAX_MSG, "DFS ordem igual (raiz %d)", raiz);
-        array_para_string(dfs_l->result_discovered, dfs_l->count, obt);
-        array_para_string(dfs_m->result_discovered, dfs_m->count, esp);
-        bool ok = dfs_l->count == dfs_m->count && strcmp(obt, esp) == 0;
-        imprimir_resultado(descricao, obt, ok, esp);
+        for (int raiz = 1; raiz <= gm->n; raiz++) {
+            for (int use_dfs = 0; use_dfs <= 1; use_dfs++) {
+                const char *tipo = use_dfs ? "DFS" : "BFS";
+                GraphSearch *bm = use_dfs ? Graph_DFS(gm, raiz, 1) : Graph_BFS(gm, raiz, 1, 0);
+                GraphSearch *bl = use_dfs ? Graph_DFS(gl, raiz, 1) : Graph_BFS(gl, raiz, 1, 0);
 
-        snprintf(descricao, MAX_MSG, "DFS pais iguais (raiz %d)", raiz);
-        array_para_string(dfs_l->parents, gm->n, obt);
-        array_para_string(dfs_m->parents, gm->n, esp);
-        imprimir_resultado(descricao, obt, strcmp(obt, esp) == 0, esp);
+                snprintf(descricao, MAX_MSG, "%s ordem igual (%s, raiz %d)", tipo, arquivos[f], raiz);
+                array_para_string(bl->result_discovered, bl->count, obt);
+                array_para_string(bm->result_discovered, bm->count, esp);
+                imprimir_resultado(descricao, obt, bl->count == bm->count && strcmp(obt, esp) == 0, esp);
 
-        GraphSearch_free(dfs_m);
-        GraphSearch_free(dfs_l);
+                snprintf(descricao, MAX_MSG, "%s pais iguais (%s, raiz %d)", tipo, arquivos[f], raiz);
+                array_para_string(bl->parents, gm->n, obt);
+                array_para_string(bm->parents, gm->n, esp);
+                imprimir_resultado(descricao, obt, strcmp(obt, esp) == 0, esp);
 
-        GraphSearch *bfs_m = Graph_BFS(gm, raiz, 1, 0);
-        GraphSearch *bfs_l = Graph_BFS(gl, raiz, 1, 0);
+                snprintf(descricao, MAX_MSG, "%s niveis iguais (%s, raiz %d)", tipo, arquivos[f], raiz);
+                array_para_string(bl->levels, gm->n, obt);
+                array_para_string(bm->levels, gm->n, esp);
+                imprimir_resultado(descricao, obt, strcmp(obt, esp) == 0, esp);
 
-        snprintf(descricao, MAX_MSG, "BFS niveis iguais (raiz %d)", raiz);
-        array_para_string(bfs_l->levels, gm->n, obt);
-        array_para_string(bfs_m->levels, gm->n, esp);
-        imprimir_resultado(descricao, obt, strcmp(obt, esp) == 0, esp);
+                GraphSearch_free(bm);
+                GraphSearch_free(bl);
+            }
+        }
 
-        GraphSearch_free(bfs_m);
-        GraphSearch_free(bfs_l);
+        Graph_destroy(gm);
+        Graph_destroy(gl);
     }
-
-    Graph_destroy(gm);
-    Graph_destroy(gl);
 }
 
 static void testar_write_search_tree(void) {
@@ -453,6 +511,9 @@ int main(void) {
 
         printf("\n=== graph_teste_desconexo.txt / %s ===\n", representacoes[i]);
         testar_desconexo(adj_list);
+
+        printf("\n=== graph_teste_lacos_duplicatas.txt / %s ===\n", representacoes[i]);
+        testar_lacos_e_duplicatas(adj_list);
 
         printf("\n=== contrato de retorno / %s ===\n", representacoes[i]);
         testar_contrato_de_retorno(adj_list);
