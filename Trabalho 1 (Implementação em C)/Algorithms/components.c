@@ -56,15 +56,14 @@ Components connected_components(Graph *g) {
             component[component_len] = current + 1; /* rotulo 1-based, como no arquivo */
             component_len += 1;
 
-            int neighbor_count;
-            int *neighbor = neighbors(g, current, &neighbor_count);
-            for (int j = 0; j < neighbor_count; j++) {
-                if (!visited[neighbor[j]]) {
-                    visited[neighbor[j]] = true;
-                    Queue_enqueue(&queue, neighbor[j]);
+            int neighbor;
+            NeighborIter it = neighbor_iter(g, current);
+            while (neighbor_next(&it, &neighbor)) {
+                if (!visited[neighbor]) {
+                    visited[neighbor] = true;
+                    Queue_enqueue(&queue, neighbor);
                 }
             }
-            free(neighbor);
         }
 
         /* component.sort() */

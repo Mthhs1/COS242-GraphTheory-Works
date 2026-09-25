@@ -4,11 +4,12 @@
 #include "graph.h"
 
 /*
-DFS.py: busca em profundidade nas duas representacoes. Sempre devolvem
-a tripla (ordem, pais, niveis) como GraphSearch.
+DFS.py: busca em profundidade. UMA implementacao para as duas
+representacoes - a vizinhanca vem do iterador de graph_utils.h.
+
+Devolve a tripla (ordem, pais, niveis) como GraphSearch.
 */
 
-GraphSearch *DFS_adj_list(Node **graph, int n, int start_node);
-GraphSearch *DFS_matrix(MatrixCell **graph, int n, int start_node);
+GraphSearch *DFS(Graph *g, int start_node);
 
 #endif

@@ -14,11 +14,59 @@ A biblioteca suporta as duas representacoes exigidas pelo enunciado
 aqui usa a flag `adj_list` do grafo e neighbors() como unica porta de
 acesso a vizinhanca.
 
-No Python neighbors() e um gerador (yield); em C devolve um vetor
-alocado com os vizinhos e o tamanho em *count_out (o chamador libera).
+No Python neighbors() e um gerador (yield). Em C o gerador virou o
+iterador NeighborIter: ele percorre a lista encadeada ou a linha da
+matriz SEM ALOCAR NADA, e e a unica porta de acesso a vizinhanca. Por
+causa dele, as buscas, as componentes conexas, a distancia e o diametro
+sao escritos uma vez so e valem para as duas representacoes.
+
+    NeighborIter it = neighbor_iter(g, v);
+    int u;
+    while (neighbor_next(&it, &u)) {
+        ...
+    }
 */
 
-int *neighbors(Graph *g, int v, int *count_out);
+typedef struct NeighborIter {
+    bool adj_list;
+    Node *no;                /* lista: proximo no da vizinhanca   */
+    const MatrixCell *linha; /* matriz: linha do vertice          */
+    int coluna;              /* matriz: proxima coluna a examinar */
+    int n;
+} NeighborIter;
+
+static inline NeighborIter neighbor_iter(Graph *g, int v) {
+    NeighborIter it;
+    it.adj_list = g->adj_list;
+    it.n = g->n;
+    it.coluna = 0;
+    it.no = it.adj_list ? g->graph.list[v]->next : NULL;
+    it.linha = it.adj_list ? NULL : g->graph.matrix[v];
+    return it;
+}
+
+/* true e o proximo vizinho em *out; false quando a vizinhanca acaba */
+static inline bool neighbor_next(NeighborIter *it, int *out) {
+    if (it->adj_list) {
+        if (it->no == NULL) {
+            return false;
+        }
+        *out = it->no->value;
+        it->no = it->no->next;
+        return true;
+    }
+
+    while (it->coluna < it->n) {
+        int u = it->coluna;
+        it->coluna += 1;
+        if (it->linha[u] == 1) {
+            *out = u;
+            return true;
+        }
+    }
+    return false;
+}
+
 int degree(Graph *g, int v);
 int *all_degrees(Graph *g);
 int edge_count(Graph *g);
