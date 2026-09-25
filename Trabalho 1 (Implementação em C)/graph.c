@@ -75,12 +75,7 @@ GraphSearch *Graph_BFS(Graph *g, int start_node, int generate_tree, int target) 
     int start = Graph_to_index(g, start_node);
     int target_index = (target == 0) ? -1 : Graph_to_index(g, target);
 
-    GraphSearch *search;
-    if (g->adj_list) {
-        search = BFS_adj_list(g->graph.list, g->n, start, target_index);
-    } else {
-        search = BFS_matrix(g->graph.matrix, g->n, start, target_index);
-    }
+    GraphSearch *search = BFS(g, start, target_index);
 
     if (!generate_tree) {
         /* devolve apenas a ordem de descoberta, como generate_tree=False */
@@ -95,12 +90,7 @@ GraphSearch *Graph_BFS(Graph *g, int start_node, int generate_tree, int target) 
 GraphSearch *Graph_DFS(Graph *g, int start_node, int generate_tree) {
     int start = Graph_to_index(g, start_node);
 
-    GraphSearch *search;
-    if (g->adj_list) {
-        search = DFS_adj_list(g->graph.list, g->n, start);
-    } else {
-        search = DFS_matrix(g->graph.matrix, g->n, start);
-    }
+    GraphSearch *search = DFS(g, start);
 
     if (!generate_tree) {
         free(search->parents);

@@ -24,15 +24,14 @@ int *bfs_distances(Graph *g, int source) {
     while (!Queue_isEmpty(&queue)) {
         int current = Queue_dequeue(&queue);
 
-        int neighbor_count;
-        int *neighbor = neighbors(g, current, &neighbor_count);
-        for (int j = 0; j < neighbor_count; j++) {
-            if (distances[neighbor[j]] == INFINITO) {
-                distances[neighbor[j]] = distances[current] + 1;
-                Queue_enqueue(&queue, neighbor[j]);
+        int neighbor;
+        NeighborIter it = neighbor_iter(g, current);
+        while (neighbor_next(&it, &neighbor)) {
+            if (distances[neighbor] == INFINITO) {
+                distances[neighbor] = distances[current] + 1;
+                Queue_enqueue(&queue, neighbor);
             }
         }
-        free(neighbor);
     }
 
     return distances;

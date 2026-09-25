@@ -87,63 +87,12 @@ char *strbuf_finish(StrBuf *buffer) {
     return text;
 }
 
-int *neighbors(Graph *g, int v, int *count_out) {
-    int count = 0;
-
-    if (g->adj_list) {
-        Node *node = g->graph.list[v]->next;
-        while (node != NULL) {
-            count += 1;
-            node = node->next;
-        }
-
-        int *vizinhos = xmalloc((size_t)(count > 0 ? count : 1) * sizeof(int));
-        int k = 0;
-        node = g->graph.list[v]->next;
-        while (node != NULL) {
-            vizinhos[k] = node->value;
-            k += 1;
-            node = node->next;
-        }
-
-        *count_out = count;
-        return vizinhos;
-    }
-
-    MatrixCell *row = g->graph.matrix[v];
-    for (int u = 0; u < g->n; u++) {
-        if (row[u] == 1) {
-            count += 1;
-        }
-    }
-
-    int *vizinhos = xmalloc((size_t)(count > 0 ? count : 1) * sizeof(int));
-    int k = 0;
-    for (int u = 0; u < g->n; u++) {
-        if (row[u] == 1) {
-            vizinhos[k] = u;
-            k += 1;
-        }
-    }
-
-    *count_out = count;
-    return vizinhos;
-}
-
 int degree(Graph *g, int v) {
-    if (g->adj_list) {
-        int d = 0;
-        Node *node = g->graph.list[v]->next;
-        while (node != NULL) {
-            d += 1;
-            node = node->next;
-        }
-        return d;
-    }
-
     int d = 0;
-    for (int u = 0; u < g->n; u++) {
-        d += g->graph.matrix[v][u];
+    int vizinho;
+    NeighborIter it = neighbor_iter(g, v);
+    while (neighbor_next(&it, &vizinho)) {
+        d += 1;
     }
     return d;
 }

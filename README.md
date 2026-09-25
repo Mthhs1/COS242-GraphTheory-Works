@@ -46,9 +46,9 @@ recebem a struct como primeiro argumento (o `self` do protótipo em Python). Fun
 |---|---|
 | `graph.h` / `graph.c` | `Graph`: número de vértices, a flag da representação e uma `union` com a lista (`Node **`) ou a matriz (`int **`). É a API pública (`Graph_create`, `Graph_BFS`, `Graph_DFS`, `Graph_distance`, `Graph_diameter`, `Graph_connected_components`, `Graph_stats`, `Graph_write_output`, `Graph_write_search_tree`). |
 | `graph_gen.c` | leitura do arquivo (bufferizada) e construção das duas representações |
-| `Algorithms/` | BFS e DFS (uma versão por representação), componentes conexas, distância e diâmetro, estatísticas e arquivos de saída |
+| `Algorithms/` | BFS e DFS (uma implementação cada, que serve às duas representações), componentes conexas, distância e diâmetro, estatísticas e arquivos de saída |
 | `DataStructures/` | nó da lista, fila e pilha |
-| `graph_utils.c` | `neighbors()` e `degree()`, a porta única para a vizinhança nas duas representações, e utilitários de memória e texto |
+| `graph_utils.h` | `NeighborIter`, o iterador de vizinhança que percorre a lista ou a linha da matriz sem alocar — a porta única que faz cada algoritmo ser escrito uma vez só |
 
 Resultados das buscas e das análises voltam em structs próprias: `GraphSearch` (ordem, pais
 e níveis), `Components` e `GraphStats`. Os rótulos de vértice na API são 1-based, como no

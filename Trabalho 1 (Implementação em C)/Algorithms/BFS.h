@@ -4,13 +4,15 @@
 #include "graph.h"
 
 /*
-BFS.py: busca em largura nas duas representacoes. Sempre devolvem a
-tripla (ordem, pais, niveis) como GraphSearch. `target` e um indice
-0-based, ou -1 para nenhum (None no Python); quando o alvo e alcancado,
-a busca encerra assim que ele sai da fila.
+BFS.py: busca em largura. UMA implementacao para as duas representacoes -
+a vizinhanca vem do iterador de graph_utils.h, que sabe percorrer tanto a
+lista encadeada quanto a linha da matriz.
+
+Devolve a tripla (ordem, pais, niveis) como GraphSearch. `target` e um
+indice 0-based, ou -1 para nenhum (None no Python); quando o alvo e
+alcancado, a busca encerra assim que ele sai da fila.
 */
 
-GraphSearch *BFS_adj_list(Node **graph, int n, int start_node, int target);
-GraphSearch *BFS_matrix(MatrixCell **graph, int n, int start_node, int target);
+GraphSearch *BFS(Graph *g, int start_node, int target);
 
 #endif

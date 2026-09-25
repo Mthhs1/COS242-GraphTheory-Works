@@ -30,8 +30,8 @@ que a linguagem C exige ou nao oferece.
 - parents[i] guarda -1 onde o Python guardava None (rotulos de vertices sao
   sempre >= 0, entao -1 e seguro).
 - No nivel da Graph (API publica), target = 0 significa "nenhum alvo"
-  (None no Python), pois rotulos 1-based comecam em 1. Nas funcoes crua
-  BFS_adj_list/BFS_matrix (indices 0-based), target = -1 significa "nenhum".
+  (None no Python), pois rotulos 1-based comecam em 1. Na funcao crua BFS
+  (indices 0-based), target = -1 significa "nenhum".
 - Queue_dequeue/Queue_front devolvem -1 quando a fila esta vazia
   (o Python devolvia None).
 
@@ -64,10 +64,13 @@ que a linguagem C exige ou nao oferece.
   { count, components, sizes }, com Components_free() para libera-la.
 
 --------------------------------------------------------------------------------
-6. GERADORES -> VETORES ALOCADOS
+6. GERADORES -> ITERADOR
 --------------------------------------------------------------------------------
-- neighbors() (yield no Python) devolve um int* alocado com os vizinhos e
-  o tamanho em *count_out; o chamador chama free().
+- neighbors() (yield no Python) virou o iterador NeighborIter, em
+  graph_utils.h: neighbor_iter(g, v) abre a vizinhanca e neighbor_next()
+  entrega um vizinho por vez, percorrendo a lista encadeada ou a linha da
+  matriz. Nao aloca nada e e `static inline`, entao o compilador coloca o
+  laco direto em quem chama - e o gerador do Python sem o custo dele.
 - O dict {i: []} do create_list_graph vira vetores dinamicos
   (neighbor/neighbor_len/neighbor_cap) com a funcao auxiliar
   neighbor_append(), que faz o papel do .append do Python.
@@ -112,8 +115,8 @@ que a linguagem C exige ou nao oferece.
 - self.graph vira uma uniao: union { Node **list; MatrixCell **matrix; } -
   mesmo nome de variavel, dois tipos possiveis.
 - len(graph) do Python vira o campo n do struct (vetores em C nao carregam
-  o proprio tamanho); as funcoes crua (BFS_adj_list etc.) recebem n como
-  parametro.
+  o proprio tamanho); as funcoes crua (BFS, DFS) recebem o proprio Graph,
+  e a vizinhanca vem do iterador.
 - Metodos viram funcoes prefixadas: Graph_create (__init__), Graph_destroy
   (novo, por causa do free), Graph_str (__str__), Graph_BFS, Graph_DFS,
   Graph_connected_components, Graph_distance, Graph_diameter, Graph_stats,
@@ -176,13 +179,13 @@ grafos do estudo de caso:
 
 - Ordem dos vizinhos. A lista de adjacencia era ordenada de forma
   DECRESCENTE, para a DFS empilhar o menor vizinho por ultimo. Mas a
-  BFS_adj_list percorre a lista nessa ordem, enquanto a BFS_matrix percorre
+a BFS da lista percorria nessa ordem, enquanto a da matriz percorria
   0..n-1: nos empates de nivel, cada representacao escolhia um pai
   diferente (grafo_1, BFS a partir do vertice 1: 5831 dos 10000 vertices
-  com pai diferente). Agora a lista e CRESCENTE - a BFS fica igual nas duas
-  representacoes - e a DFS_adj_list empilha os vizinhos de tras para frente,
-  por um vetor auxiliar, como a DFS_matrix ja fazia com o for de n-1 a 0.
-  O resultado da DFS nao mudou.
+  com pai diferente). Agora a lista e CRESCENTE, as duas representacoes
+  entregam os vizinhos na mesma ordem, e a DFS empilha os vizinhos de tras
+  para frente, por um vetor auxiliar, para que o menor saia primeiro da
+  pilha. O resultado da DFS nao mudou.
 
 - Lacos e arestas duplicadas. Os seis grafos do estudo de caso tem os dois.
   A matriz fundia as duplicatas e contava o laco uma vez no grau; a lista
@@ -197,5 +200,15 @@ grafos do estudo de caso:
   do grafo_2 (49948 vertices) precisaria de 9,3 GB e nao cabia na memoria
   da maquina de teste; com 1 byte sao 2,3 GB e o grafo_2 entra na
   comparacao entre as duas representacoes. O Python usa listas de inteiros.
+
+- Uma implementacao de cada busca, sobre o iterador de vizinhanca
+  (sugestao do professor na apresentacao). Antes, BFS e DFS eram escritas
+  duas vezes, uma por representacao, e neighbors() alocava um vetor por
+  vertice - um malloc/free por vertice visitado nas componentes conexas,
+  na distancia e no diametro. Com o NeighborIter, BFS.c e DFS.c caem de
+  243 para 142 linhas, as componentes conexas ficam cerca de 10% mais
+  rapidas (grafo_5: 9,5 -> 8,5 s ponta a ponta) e o tempo das buscas fica
+  igual, dentro do ruido entre rodadas. Os 176 testes continuam passando e
+  as respostas sao identicas as de antes.
 
 O prototipo em Python (pasta "Trabalho 1") nao recebeu essas correcoes.
