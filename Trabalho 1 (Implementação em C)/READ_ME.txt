@@ -47,6 +47,9 @@ Organizacao dos fontes:
 
     DataStructures/   estruturas de dados basicas: no (node), fila
                       (my_queue) e pilha (my_stack)
+    graph_utils.h     o iterador de vizinhanca (NeighborIter): a unica
+                      parte do codigo que sabe a diferenca entre a lista e
+                      a matriz, e por isso cada algoritmo e escrito uma vez
     Algorithms/       algoritmos sobre o grafo: buscas (BFS, DFS),
                       componentes conexas, distancia/diametro (distance)
                       e estatisticas (graph_stats)
