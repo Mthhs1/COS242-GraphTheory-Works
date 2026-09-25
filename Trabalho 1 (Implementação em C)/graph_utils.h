@@ -10,15 +10,13 @@ Utilitarios compartilhados pelos modulos de componentes, distancia e
 estatisticas (graph_utils.py).
 
 A biblioteca suporta as duas representacoes exigidas pelo enunciado
-(matriz e lista de adjacencia). Para nao duplicar cada algoritmo, tudo
-aqui usa a flag `adj_list` do grafo e neighbors() como unica porta de
-acesso a vizinhanca.
+(matriz e lista de adjacencia). Para nao duplicar cada algoritmo, a
+vizinhanca e acessada por uma unica porta: o iterador NeighborIter.
 
-No Python neighbors() e um gerador (yield). Em C o gerador virou o
-iterador NeighborIter: ele percorre a lista encadeada ou a linha da
-matriz SEM ALOCAR NADA, e e a unica porta de acesso a vizinhanca. Por
-causa dele, as buscas, as componentes conexas, a distancia e o diametro
-sao escritos uma vez so e valem para as duas representacoes.
+No Python neighbors() era um gerador (yield); em C ele virou esse
+iterador, que percorre a lista encadeada ou a linha da matriz SEM ALOCAR
+NADA. Por causa dele, as buscas, as componentes conexas, a distancia e o
+diametro sao escritos uma vez so e valem para as duas representacoes.
 
     NeighborIter it = neighbor_iter(g, v);
     int u;
