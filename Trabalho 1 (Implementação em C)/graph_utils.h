@@ -18,17 +18,25 @@ iterador, que percorre a lista encadeada ou a linha da matriz SEM ALOCAR
 NADA. Por causa dele, as buscas, as componentes conexas, a distancia e o
 diametro sao escritos uma vez so e valem para as duas representacoes.
 
+Na Parte 2 (grafos com pesos) o iterador entrega tambem o peso da aresta:
+o peso mora no no da lista ou na matriz de pesos do grafo, e nenhum
+algoritmo precisa saber onde.
+
     NeighborIter it = neighbor_iter(g, v);
     int u;
-    while (neighbor_next(&it, &u)) {
+    double peso;
+    while (neighbor_next(&it, &u, &peso)) {
         ...
     }
+
+Quem nao se interessa pelos pesos passa NULL no ultimo argumento.
 */
 
 typedef struct NeighborIter {
     bool adj_list;
     Node *no;                /* lista: proximo no da vizinhanca   */
     const MatrixCell *linha; /* matriz: linha do vertice          */
+    const double *linha_pesos; /* matriz: pesos da linha (NULL se o grafo nao tem pesos) */
     int coluna;              /* matriz: proxima coluna a examinar */
     int n;
 } NeighborIter;
@@ -38,18 +46,29 @@ static inline NeighborIter neighbor_iter(Graph *g, int v) {
     it.adj_list = g->adj_list;
     it.n = g->n;
     it.coluna = 0;
-    it.no = it.adj_list ? g->graph.list[v]->next : NULL;
-    it.linha = it.adj_list ? NULL : g->graph.matrix[v];
+    if (it.adj_list) {
+        it.no = g->graph.list[v]->next;
+        it.linha = NULL;
+        it.linha_pesos = NULL;
+    } else {
+        it.no = NULL;
+        it.linha = g->graph.matrix[v];
+        it.linha_pesos = (g->weights != NULL) ? g->weights[v] : NULL;
+    }
     return it;
 }
 
-/* true e o proximo vizinho em *out; false quando a vizinhanca acaba */
-static inline bool neighbor_next(NeighborIter *it, int *out) {
+/* true e o proximo vizinho em *out (e o peso da aresta em *peso_out, se
+   pedido); false quando a vizinhanca acaba. peso_out pode ser NULL. */
+static inline bool neighbor_next(NeighborIter *it, int *out, double *peso_out) {
     if (it->adj_list) {
         if (it->no == NULL) {
             return false;
         }
         *out = it->no->value;
+        if (peso_out != NULL) {
+            *peso_out = it->no->weight;
+        }
         it->no = it->no->next;
         return true;
     }
@@ -59,6 +78,10 @@ static inline bool neighbor_next(NeighborIter *it, int *out) {
         it->coluna += 1;
         if (it->linha[u] == 1) {
             *out = u;
+            if (peso_out != NULL) {
+                /* grafo sem pesos no arquivo: toda aresta vale 1 */
+                *peso_out = (it->linha_pesos != NULL) ? it->linha_pesos[u] : 1.0;
+            }
             return true;
         }
     }

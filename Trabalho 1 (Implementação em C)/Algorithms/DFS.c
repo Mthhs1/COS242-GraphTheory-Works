@@ -43,7 +43,7 @@ GraphSearch *DFS(Graph *g, int start_node) {
             int total = 0;
             int neighbor;
             NeighborIter it = neighbor_iter(g, current_node);
-            while (neighbor_next(&it, &neighbor)) {
+            while (neighbor_next(&it, &neighbor, NULL)) {
                 if (vector[neighbor] == 0) {
                     if (total == pendentes_cap) {
                         pendentes_cap = (pendentes_cap == 0) ? 16 : pendentes_cap * 2;

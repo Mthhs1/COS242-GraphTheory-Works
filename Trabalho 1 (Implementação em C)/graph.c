@@ -8,6 +8,7 @@
 #include "graph_utils.h"
 #include "components.h"
 #include "distance.h"
+#include "dijkstra.h"
 #include "graph_stats.h"
 
 void GraphSearch_free(GraphSearch *search) {
@@ -24,17 +25,26 @@ Graph *Graph_create(const char *archive, bool adj_list) {
     /*
     Carrega o grafo do arquivo `archive`. adj_list=true usa lista de
     adjacencia; adj_list=false (padrao no Python) usa matriz.
+
+    Parte 2: o arquivo pode ter uma terceira coluna com o peso da aresta.
+    O carregamento informa se o arquivo tem pesos (algum != 1) e se tem
+    peso negativo (Dijkstra recusa); na matriz, os pesos ficam em
+    g->weights (NULL se o arquivo nao tem pesos).
     */
     Graph *g = xmalloc(sizeof(Graph));
     g->adj_list = adj_list;
     g->n = 0;
+    g->weighted = false;
+    g->negative_weight = false;
+    g->weights = NULL;
 
     if (adj_list) {
-        g->graph.list = create_list_graph(archive, &g->n);
+        g->graph.list = create_list_graph(archive, &g->n, &g->weighted, &g->negative_weight);
         return g;
     }
 
-    g->graph.matrix = create_matrix_graph(archive, &g->n);
+    g->graph.matrix = create_matrix_graph(archive, &g->n, &g->weights,
+                                          &g->weighted, &g->negative_weight);
     return g;
 }
 
@@ -46,6 +56,7 @@ void Graph_destroy(Graph *g) {
         free_list_graph(g->graph.list, g->n);
     } else {
         free_matrix_graph(g->graph.matrix, g->n);
+        free_matrix_weights(g->weights, g->n);
     }
     free(g);
 }
@@ -152,6 +163,15 @@ char *Graph_write_search_tree(Graph *g, const char *output_path, int start_node,
                                        output_path, start_node - 1);
     GraphSearch_free(search);
     return content;
+}
+
+struct DijkstraResult *Graph_dijkstra(Graph *g, int start_node, int use_heap) {
+    /* Parte 2: Dijkstra a partir de `start_node` (rotulo 1-based), com as
+       estimativas em vetor (use_heap == 0) ou em heap (use_heap == 1).
+       Devolve NULL, com mensagem, se o grafo tem peso negativo. */
+    int start = Graph_to_index(g, start_node);
+    DijkstraModo modo = use_heap ? DIJKSTRA_HEAP : DIJKSTRA_VETOR;
+    return dijkstra(g, start, modo);
 }
 
 #ifdef GRAPH_MAIN

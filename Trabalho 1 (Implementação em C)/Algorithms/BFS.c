@@ -37,7 +37,7 @@ GraphSearch *BFS(Graph *g, int start_node, int target) {
         /* vizinhos em ordem crescente nas duas representacoes */
         int neighbor;
         NeighborIter it = neighbor_iter(g, current_node);
-        while (neighbor_next(&it, &neighbor)) {
+        while (neighbor_next(&it, &neighbor, NULL)) {
             if (vector[neighbor] == 0) {
                 Queue_enqueue(&queue, neighbor);
                 vector[neighbor] = 1; /* marca ao entrar na fila */

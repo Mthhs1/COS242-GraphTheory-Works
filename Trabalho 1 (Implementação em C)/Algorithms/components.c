@@ -58,7 +58,7 @@ Components connected_components(Graph *g) {
 
             int neighbor;
             NeighborIter it = neighbor_iter(g, current);
-            while (neighbor_next(&it, &neighbor)) {
+            while (neighbor_next(&it, &neighbor, NULL)) {
                 if (!visited[neighbor]) {
                     visited[neighbor] = true;
                     Queue_enqueue(&queue, neighbor);

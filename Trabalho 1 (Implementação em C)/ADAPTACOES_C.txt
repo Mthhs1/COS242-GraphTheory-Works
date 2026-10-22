@@ -212,3 +212,74 @@ a BFS da lista percorria nessa ordem, enquanto a da matriz percorria
   as respostas sao identicas as de antes.
 
 O prototipo em Python (pasta "Trabalho 1") nao recebeu essas correcoes.
+
+--------------------------------------------------------------------------------
+14. PARTE 2: GRAFOS COM PESOS E DIJKSTRA (so no C; novo no enunciado)
+--------------------------------------------------------------------------------
+O enunciado da Parte 2 pediu para "decidir a melhor forma de estender a
+biblioteca". Decisoes:
+
+- Leitura da terceira coluna. O Leitor ganhou pushback de 1 caractere:
+  ler_inteiro devolve o terminador do numero ao leitor, e ler_aresta le
+  "a b", olha o que vem depois de b na MESMA linha e, se nao e fim de
+  linha, le o peso com ler_double (aceita sinal, fracao e exponente). Sem
+  a terceira coluna, a aresta vale 1 - os arquivos da Parte 1 continuam
+  valendo (as 176 verificacoes da Parte 1 nao mudam).
+
+- Onde moram os pesos: no no da lista (Node.weight) e, na matriz, numa
+  matriz double separada, alocada SO quando o arquivo tem algum peso != 1
+  (nos grafos sem pesos ela fica NULL). A adjacencia continua na matriz de
+  1 byte; o peso 0 nao se confunde com "sem aresta" porque o peso so e
+  lido para celulas com aresta. Como a matriz de pesos nasce na PRIMEIRA
+  aresta com peso != 1, as arestas lidas antes dela ganham 1.0 num
+  preenchimento unico.
+
+- O iterador de vizinhanca entrega (vizinho, peso): neighbor_next ganhou
+  um terceiro parametro, anulavel - quem nao se interessa por pesos (toda
+  a Parte 1) passa NULL e nao mudou uma linha de logica.
+
+- Arestas duplicadas com pesos diferentes: vale a ULTIMA linha do arquivo,
+  nas duas representacoes (na matriz isso e natural; na lista, as arestas
+  sao ordenadas por (vertice, ordem-de-arquivo) e, de cada corrida de
+  duplicatas, fica a ultima).
+
+- Dijkstra de duas formas, escrito uma vez (o enunciado pede exatamente
+  isso): o algoritmo vive sobre o DistStore, que abstrai guardar/atualizar
+  as estimativas e extrair o minimo. As duas implementacoes plugam nele:
+  vetor (todos comecam ativos com estimativa infinita; minimo por varredura,
+  O(n^2)) e heap (so entram vertices com estimativa finita; atualizacao e
+  o decrease-key do MinHeap). No heap, MinHeap_decrease_key usa o vetor
+  posicao[vertice] para achar o elemento em O(1) e consertar o heap em
+  O(log n) - a "chave modificada de forma eficiente" que o enunciado
+  exige.
+
+- Distancias em double: o INFINITO da Parte 1 (-1) nao serve (distancia
+  negativa e valida com pesos); INFINITO_PESO e o HUGE_VAL da math.h, e
+  inalcancavel e quem "nao esta no heap".
+
+- Pesos negativos: dijkstra devolve NULL e imprime que a biblioteca ainda
+  nao implementa caminhos minimos com pesos negativos (o enunciado manda
+  informar, nao resolver). E um retorno, nao um exit: o chamador decide.
+  A flag negative_weight do Graph vem da leitura (nem percorre as arestas
+  para conferir).
+
+- Testes (test_parte2.c, mesma estrutura do test_parte1.c): leitura com
+  pesos nas duas representacoes, duplicata com pesos diferentes, Dijkstra
+  com vetor = com heap = nas duas representacoes (dist e pais), caminhos,
+  inalcancaveis, recusa de pesos negativos e, em grafo sem pesos,
+  dist == niveis da BFS. Grafos de teste: graph_exemplo_pesos.txt (a
+  Figura 1 da Parte 2, com o peso -9.5), graph_exemplo_pesos_positivos.txt
+  (a mesma com +9.5, para o Dijkstra), graph_teste_pesos.txt (duplicata +
+  peso "tardio" + laco) e graph_teste_pesos_desconexo.txt.
+
+- Estudos de caso (secao 3 da Parte 2): os programas e a automacao ficam
+  na pasta "Trabalho 2", a entrega independente da Parte 2 (os fontes da
+  biblioteca la sao identicos aos daqui): p2_questao1 (distancias e
+  caminhos de 10 a 20/30/40/50/60), p2_questao2 (tempo medio do Dijkstra
+  com vetor e com heap, k vertices aleatorios DISTINTOS com semente FIXA -
+  xorshift64*: reproduzivel entre execucoes e maquinas) e p2_questao3
+  (rede de colaboracao por nomes exatos, com duas passadas pelo arquivo
+  de nomes para nao guardar milhoes de strings). O rodar_estudos_p2.sh de
+  la so roda em grafos com pesos (tres colunas) e gera as tabelas da
+  Parte 2 com o gerar_tabelas_p2.py; a rede de colaboracao roda pelas
+  variaveis REDE_COLABORACAO e REDE_NOMES.

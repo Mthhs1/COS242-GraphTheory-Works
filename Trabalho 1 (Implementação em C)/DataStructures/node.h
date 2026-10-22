@@ -3,15 +3,17 @@
 
 /*
 node.py: no da lista encadeada, usado pela fila (my_queue) e pela
-lista de adjacencia.
+lista de adjacencia. Na Parte 2 ganhou o campo `weight`: o peso da
+aresta na lista de adjacencia (os nos da fila nao o usam).
 */
 
 typedef struct Node {
     int value;
+    double weight; /* peso da aresta (Parte 2); 1.0 em grafos sem pesos */
     struct Node *next;
 } Node;
 
-/* Node(value, next_node=None) no Python */
-Node *Node_create(int value, Node *next_node);
+/* Node(value, weight, next_node=None) no Python */
+Node *Node_create(int value, double weight, Node *next_node);
 
 #endif

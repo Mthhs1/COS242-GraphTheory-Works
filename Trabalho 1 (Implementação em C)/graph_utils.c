@@ -91,7 +91,7 @@ int degree(Graph *g, int v) {
     int d = 0;
     int vizinho;
     NeighborIter it = neighbor_iter(g, v);
-    while (neighbor_next(&it, &vizinho)) {
+    while (neighbor_next(&it, &vizinho, NULL)) {
         d += 1;
     }
     return d;

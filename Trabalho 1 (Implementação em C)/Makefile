@@ -1,10 +1,14 @@
 CC = gcc
 CFLAGS = -std=c11 -Wall -Wextra -O2 -I. -IDataStructures -IAlgorithms
 
-# biblioteca: mesmos modulos do Python, agora separados por pasta
-DS  = DataStructures/node.c DataStructures/my_queue.c DataStructures/my_stack.c
+# biblioteca: mesmos modulos do Python, agora separados por pasta. Os modulos
+# da Parte 2 (heap e dijkstra) ficam aqui tambem: a biblioteca e uma so, e as
+# duas pastas de entrega ("Trabalho 1 (Implementação em C)" e "Trabalho 2")
+# tem exatamente os mesmos fontes; os alvos da Parte 2 ficam no Makefile de la.
+DS  = DataStructures/node.c DataStructures/my_queue.c DataStructures/my_stack.c \
+      DataStructures/heap.c
 ALG = Algorithms/BFS.c Algorithms/DFS.c Algorithms/components.c \
-      Algorithms/distance.c Algorithms/graph_stats.c
+      Algorithms/distance.c Algorithms/graph_stats.c Algorithms/dijkstra.c
 LIB = $(DS) $(ALG) graph_gen.c graph_utils.c graph.c
 
 # executaveis ficam em bin/, para nao misturar com o codigo
@@ -65,7 +69,8 @@ graph_stats_demo: $(BIN)/graph_stats_demo
 	./$(BIN)/graph_stats_demo
 
 # ----------------------------------------------------------------------
-# estudos de caso (secao 4 do enunciado) - fontes na pasta "Study cases"
+# estudos de caso (secao 4 do enunciado) - fontes na pasta "Study cases";
+# os da Parte 2 (secao 3 do enunciado dela) ficam na pasta "Trabalho 2"
 # ----------------------------------------------------------------------
 CASOS = Study cases
 
@@ -93,7 +98,9 @@ saida: | $(BIN)
 
 casos: questao1 questao2_3 questao4 questao5 questao6 questao7 saida
 
-# roda todos os estudos de caso nos grafos de GRAFOS e gera resultados/tabelas.md
+# roda todos os estudos de caso da Parte 1 nos grafos de GRAFOS e gera
+# resultados/tabelas.md. Os estudos da Parte 2 (grafos com pesos e rede de
+# colaboracao) rodam pela pasta "Trabalho 2", com o rodar_estudos_p2.sh de la.
 GRAFOS = ../Grafos
 estudos: all casos
 	bash "$(CASOS)/rodar_estudos.sh" "$(GRAFOS)" resultados

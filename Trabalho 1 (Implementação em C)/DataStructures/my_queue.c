@@ -9,7 +9,7 @@ void Queue_init(Queue *queue) {
 }
 
 void Queue_enqueue(Queue *queue, int item) {
-    Node *node = Node_create(item, NULL);
+    Node *node = Node_create(item, 0.0, NULL); /* o peso nao se aplica a fila */
 
     if (queue->head == NULL) {
         queue->head = node;

@@ -7,6 +7,12 @@ representacoes exigidas pelo enunciado (matriz e lista de adjacencia) e os
 algoritmos da Parte 1: BFS, DFS, distancia, diametro (exato e aproximado),
 componentes conexas e estatisticas do grafo em arquivo.
 
+A MESMA biblioteca foi estendida para a Parte 2 do trabalho (pesos nas
+arestas e Dijkstra, com vetor e com heap): os fontes da biblioteca sao
+identicos aos da pasta "Trabalho 2", que e a entrega da Parte 2 - os
+testes, os demos e os programas dos estudos de caso da Parte 2 ficam la,
+e o Makefile de la tem so os alvos dela (veja a secao 7).
+
 
 --------------------------------------------------------------------------------
 1. FORMATO DO ARQUIVO DE ENTRADA (graph.txt)
@@ -15,15 +21,21 @@ A primeira linha informa o NUMERO DE VERTICES do grafo (n). Cada linha
 seguinte informa UMA aresta, com os rotulos dos dois vertices separados por
 espaco. Os rotulos sao 1-based (o primeiro vertice e o 1, o ultimo e o n).
 
-    5          <- numero de vertices
-    1 2        <- aresta entre os vertices 1 e 2
-    2 5
-    5 3
-    4 5
-    1 5
+Desde a Parte 2, a linha de aresta pode ter uma TERCEIRA coluna: o PESO da
+aresta, um numero em ponto flutuante (pode ser negativo). Sem a terceira
+coluna, a aresta vale 1.
 
-Este e exatamente o exemplo da Figura 1 do enunciado (veja
-graph_exemplo.txt nesta pasta).
+    5            <- numero de vertices
+    1 2 0.1      <- aresta entre 1 e 2, com peso 0.1
+    2 5 0.2
+    5 3 5
+    3 4 -9.5     <- pesos negativos sao lidos normalmente (o Dijkstra e que
+    4 5 2.3         nao aceita - veja a secao 7)
+    1 5 1
+
+Este e o exemplo da Figura 1 do enunciado da Parte 2 (o da Parte 1 e o
+graph_exemplo.txt desta pasta; o arquivo com pesos esta na pasta
+"Trabalho 2").
 
 Observacoes sobre o formato:
 - O numero de arestas (m) NAO precisa ser igual ao numero de vertices.
@@ -31,10 +43,10 @@ Observacoes sobre o formato:
   (nao e preciso repetir "b a" no arquivo).
 - Vertices isolados simplesmente nao aparecem em nenhuma linha de aresta.
 - Linhas em branco sao ignoradas.
-- Lacos ("3 3") e arestas repetidas ("1 2" duas vezes, ou "1 2" e
-  "2 1") sao IGNORADOS na leitura: o grafo e tratado como simples, e as
-  duas representacoes produzem os mesmos graus e o mesmo numero de
-  arestas. Os grafos do estudo de caso contem lacos e duplicatas.
+- Lacos ("3 3") e arestas repetidas sao IGNORADOS na leitura: o grafo e
+  tratado como simples, e as duas representacoes produzem os mesmos graus
+  e o mesmo numero de arestas. Entre arestas repetidas COM PESOS
+  diferentes, vale a ULTIMA linha do arquivo, nas duas representacoes.
 - Nas buscas (BFS e DFS), os vizinhos sao visitados em ordem CRESCENTE
   de rotulo, nas duas representacoes - por isso matriz e lista geram
   exatamente a mesma arvore.
@@ -46,14 +58,18 @@ Observacoes sobre o formato:
 Organizacao dos fontes:
 
     DataStructures/   estruturas de dados basicas: no (node), fila
-                      (my_queue) e pilha (my_stack)
+                      (my_queue), pilha (my_stack) e heap binario de
+                      minimos com decrease-key (heap)
     graph_utils.h     o iterador de vizinhanca (NeighborIter): a unica
                       parte do codigo que sabe a diferenca entre a lista e
-                      a matriz, e por isso cada algoritmo e escrito uma vez
+                      a matriz (e onde moram os pesos), e por isso cada
+                      algoritmo e escrito uma vez
     Algorithms/       algoritmos sobre o grafo: buscas (BFS, DFS),
-                      componentes conexas, distancia/diametro (distance)
-                      e estatisticas (graph_stats)
-    Study cases/      programas da secao 4 do enunciado (estudos de caso)
+                      componentes conexas, distancia/diametro (distance),
+                      estatisticas (graph_stats) e caminhos minimos com
+                      pesos por Dijkstra, com vetor ou com heap (dijkstra)
+    Study cases/      programas da secao 4 do enunciado (estudos de caso da
+                      Parte 1); os da Parte 2 ficam na pasta "Trabalho 2"
     bin/              executaveis gerados pelo make (criada ao compilar)
     raiz              a "classe" Graph (graph.c/h), a leitura do arquivo
                       de entrada (graph_gen), utilitarios compartilhados
@@ -63,7 +79,7 @@ Organizacao dos fontes:
 Requisitos: gcc e make.
 
     make                 -> compila os testes (bin/test_parte1) e o demo (bin/graph)
-    make test            -> compila e roda os testes
+    make test            -> compila e roda os testes da Parte 1
     make clean           -> remove a pasta bin/ com os executaveis
 
 Outros alvos (constroem, se precisar, e RODAM o programa - veja secao 5):
@@ -73,8 +89,8 @@ Outros alvos (constroem, se precisar, e RODAM o programa - veja secao 5):
 Estudos de caso (secao 4 do enunciado - veja secao 6):
     make casos           -> compila os programas das questoes (bin/questao*)
                             e o dos arquivos de saida (bin/saida)
-    make estudos         -> roda todos os estudos de caso nos grafos de
-                            ../Grafos e gera resultados/tabelas.md
+    make estudos         -> roda todos os estudos de caso da Parte 1 nos
+                            grafos de ../Grafos e gera resultados/tabelas.md
     make questao1  make questao2_3  make questao4
     make questao5  make questao6  make questao7  make saida
 
@@ -157,9 +173,11 @@ Ha duas formas.
         gcc -std=c11 -Wall -Wextra -I. -IDataStructures -IAlgorithms \
             -o meu_programa meu_programa.c \
             DataStructures/node.c DataStructures/my_queue.c \
-            DataStructures/my_stack.c graph_gen.c graph_utils.c \
+            DataStructures/my_stack.c DataStructures/heap.c \
+            graph_gen.c graph_utils.c \
             Algorithms/BFS.c Algorithms/DFS.c Algorithms/components.c \
-            Algorithms/distance.c Algorithms/graph_stats.c graph.c -lm
+            Algorithms/distance.c Algorithms/graph_stats.c \
+            Algorithms/dijkstra.c graph.c -lm
 
 
 --------------------------------------------------------------------------------
@@ -206,9 +224,17 @@ None do Python (sem pai / nao alcancado).
         componentes). Retorna o conteudo escrito; libere com free().
 
     char *Graph_write_search_tree(Graph *g, const char *caminho,
-                                  int inicio, int use_dfs);
+                                   int inicio, int use_dfs);
         Escreve o arquivo do requisito 4: raiz, pai e nivel de cada vertice
         da arvore de busca (use_dfs: 0 = BFS, 1 = DFS).
+
+    DijkstraResult *Graph_dijkstra(Graph *g, int inicio, int use_heap);
+        Parte 2: distancias minimas e arvore de caminhos minimos a partir
+        do vertice `inicio` (1-based) em grafo COM PESOS. use_heap: 0 =
+        estimativas em vetor (O(n^2)), 1 = em heap (O(m log n)). Devolve
+        NULL, com mensagem de erro, se o grafo tem aresta com peso
+        negativo. O uso completo (testes, demos e estudos de caso da
+        Parte 2) esta na pasta "Trabalho 2" - veja a secao 7.
 
 
 --------------------------------------------------------------------------------
@@ -233,6 +259,9 @@ Programas dos estudos de caso (secao 6; fontes na pasta "Study cases"):
     ./bin/questao7         Q7: diametro exato e/ou aproximado.
     ./bin/saida            Requisitos 2 e 4 nos grafos do estudo: estatisticas
                            e arquivos de saida.
+
+Os programas da Parte 2 (test_parte2, heap_demo, dijkstra_demo e
+p2_questao1/2/3) ficam na pasta "Trabalho 2" (veja a secao 7).
 
 Atalho: `make <nome>` tambem constroi (se precisar) e roda cada programa -
 por exemplo, `make graph` roda o demo e `make test_parte1` roda os testes
@@ -259,7 +288,7 @@ versionada: os arquivos somam cerca de 1 GB.
     make estudos
     (o mesmo que: bash "Study cases/rodar_estudos.sh" ../Grafos resultados)
 
-    Roda as questoes 1 a 7 em cada grafo, nas duas representacoes, e grava:
+    Roda as questoes 1 a 7 em cada grafo, nas duas representacoes. Grava:
 
         resultados/tabelas.md      uma tabela por questao (grafos nas linhas)
         resultados/ambiente.txt    maquina, compilador e flags usados
@@ -271,9 +300,13 @@ versionada: os arquivos somam cerca de 1 GB.
     A matriz so e carregada quando cabe na memoria disponivel; se nao couber,
     a tabela mostra "inviavel" e quanto ela precisaria. O diametro exato (BFS
     de cada vertice) so roda na lista e em grafos com ate 60000 vertices.
-    Variaveis de ambiente: BUSCAS (padrao 100) e DIAMETRO_EXATO_MAX.
+    Variaveis de ambiente (com padroes): BUSCAS (100) e DIAMETRO_EXATO_MAX
+    (60000).
     As tabelas podem ser refeitas sem rodar tudo de novo:
         python3 "Study cases/gerar_tabelas.py" resultados
+
+    Os estudos de caso da Parte 2 (grafos com pesos e rede de colaboracao)
+    rodam pela pasta "Trabalho 2", com o rodar_estudos_p2.sh de la.
 
 (b) UMA QUESTAO POR VEZ
 
@@ -329,3 +362,32 @@ Exemplos com um grafo do estudo de caso:
 Atencao: para grafos grandes, a representacao em matriz pode nao caber em
 memoria (n^2 bytes). Use-a apenas onde for viavel - a comparacao de
 memoria e justamente o objeto da Questao 1.
+
+
+--------------------------------------------------------------------------------
+7. PARTE 2: GRAFOS COM PESOS E DIJKSTRA (PASTA "Trabalho 2")
+--------------------------------------------------------------------------------
+A Parte 2 do trabalho (grafos com pesos nas arestas e distancia/caminho
+minimo por Dijkstra, com vetor e com heap) foi incorporada a esta MESMA
+biblioteca - como pede o enunciado dela - e entregue na pasta "Trabalho 2",
+na raiz do repositorio. A divisao:
+
+- BIBLIOTECA (identica nas duas pastas): os pesos moram no no da lista
+  (Node.weight) e, na matriz, numa matriz double separada (g->weights),
+  alocada so se o arquivo tem algum peso != 1; o acesso e sempre pelo
+  MESMO iterador de vizinhanca - neighbor_next entrega (vizinho, peso);
+  DataStructures/heap.c e o heap de minimos com decrease-key em O(log n)
+  (pelo posicao[vertice]); Algorithms/dijkstra.c e o algoritmo escrito
+  UMA vez, sobre o DistStore - a abstracao de guardar/atualizar as
+  estimativas e extrair o minimo -, com as duas implementacoes (vetor,
+  O(n^2)) e (heap, O(m log n)) plugando nele. Pesos negativos: dijkstra
+  devolve NULL e informa que a biblioteca ainda nao implementa caminhos
+  minimos com pesos negativos.
+
+- NA PASTA "Trabalho 2" (so la): test_parte2.c e os grafos de teste com
+  pesos, os demos heap_demo e dijkstra_demo, os programas dos estudos de
+  caso da Parte 2 (p2_questao1/2/3: distancias e caminhos do vertice 10,
+  tempo medio do Dijkstra com vetor e com heap, e a rede de colaboracao
+  com os nomes dos pesquisadores), a automacao dela
+  (Study cases/rodar_estudos_p2.sh + gerar_tabelas_p2.py, alvo
+  `make estudos`) e o READ_ME proprio, com o uso completo.

@@ -26,7 +26,7 @@ int *bfs_distances(Graph *g, int source) {
 
         int neighbor;
         NeighborIter it = neighbor_iter(g, current);
-        while (neighbor_next(&it, &neighbor)) {
+        while (neighbor_next(&it, &neighbor, NULL)) {
             if (distances[neighbor] == INFINITO) {
                 distances[neighbor] = distances[current] + 1;
                 Queue_enqueue(&queue, neighbor);

@@ -11,6 +11,9 @@
 # grava os arquivos em <resultados>/saidas/ (fora do git: chegam a dezenas de MB).
 # No fim, gerar_tabelas.py monta <resultados>/tabelas.md.
 #
+# Os estudos de caso da Parte 2 (grafos com pesos, Dijkstra e rede de
+# colaboracao) rodam pelo rodar_estudos_p2.sh da pasta "Trabalho 2".
+#
 # Variaveis de ambiente:
 #     BUSCAS=100               buscas por tipo nas questoes 2 e 3
 #     DIAMETRO_EXATO_MAX=60000 diametro exato (BFS de cada vertice) so na lista
