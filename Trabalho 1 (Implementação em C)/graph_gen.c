@@ -191,114 +191,164 @@ static int ler_aresta(Leitor *leitor, int *a, int *b, double *peso) {
     return ler_double(leitor, peso);
 }
 
-Node **create_empty_list_graph(int n) {
+/*
+Todos os nos de um grafo em lista - as sentinelas graph[i] e os vizinhos -
+moram num UNICO bloco que comeca em graph[0]: uma alocacao por grafo em vez
+de uma por aresta. Nos grafos da Parte 2 (ate 50 milhoes de vertices e 73
+milhoes de arestas), um malloc por no (24 bytes do no + 8 de cabecalho do
+malloc) mais os vetores temporarios por vertice gastavam ~1,6x a memoria
+do bloco (W_6: 6,1 GB contra 3,8 GB); no W_7 a leitura antiga enchia os
+7,7 GB da maquina e passava a usar swap. Com o bloco, o no custa so os seus
+24 bytes e o W_7 roda com 5,0 GB.
+`vizinhos` e quantos nos de vizinho o bloco reserva depois das sentinelas.
+*/
+static Node **alocar_list_graph(int n, size_t vizinhos) {
     Node **graph = xmalloc((size_t)n * sizeof(Node *));
+    if (n == 0) {
+        return graph;
+    }
+    Node *bloco = xmalloc(((size_t)n + vizinhos) * sizeof(Node));
     for (int i = 0; i < n; i++) {
-        graph[i] = Node_create(-1, 0.0, NULL); /* no Python: Node(None, None) */
+        bloco[i].value = -1; /* no Python: Node(None, None) */
+        bloco[i].weight = 0.0;
+        bloco[i].next = NULL;
+        graph[i] = &bloco[i];
     }
     return graph;
 }
 
-/* expande neighbor[i], a lista dinamica que faz o papel do .append do Python */
-static void neighbor_append(ArestaLida **neighbor, int *len, int *cap, int i,
-                            int vertice, double peso, int ordem) {
-    if (len[i] == cap[i]) {
-        cap[i] = (cap[i] == 0) ? 4 : cap[i] * 2;
-        neighbor[i] = xrealloc(neighbor[i], (size_t)cap[i] * sizeof(ArestaLida));
-    }
-    neighbor[i][len[i]].vertice = vertice;
-    neighbor[i][len[i]].peso = peso;
-    neighbor[i][len[i]].ordem = ordem;
-    len[i] += 1;
+Node **create_empty_list_graph(int n) {
+    return alocar_list_graph(n, 0);
 }
 
-Node **create_list_graph(const char *archive_directory, int *n_out,
-                         bool *weighted_out, bool *negative_out) {
+/* abre o arquivo e le a primeira linha (n); o leitor fica nas arestas */
+static FILE *abrir_grafo(const char *archive_directory, Leitor *leitor, int *n) {
     FILE *file = fopen(archive_directory, "r");
     if (file == NULL) {
         fprintf(stderr, "arquivo nao encontrado: %s\n", archive_directory);
         exit(EXIT_FAILURE);
     }
-
-    int n = 0;
-    Leitor leitor;
-    Leitor_init(&leitor, file);
-    if (!ler_inteiro(&leitor, &n) || n < 0) {
+    Leitor_init(leitor, file);
+    if (!ler_inteiro(leitor, n) || *n < 0) {
         fprintf(stderr, "arquivo invalido: %s\n", archive_directory);
         exit(EXIT_FAILURE);
     }
-    Node **graph = create_empty_list_graph(n);
+    return file;
+}
 
-    /* no Python: last_nodes = [None for _ in range(n)]; neighbor = {i: []} */
-    Node **last_nodes = xcalloc((size_t)n, sizeof(Node *));
-    ArestaLida **neighbor = xcalloc((size_t)n, sizeof(ArestaLida *));
-    int *neighbor_len = xcalloc((size_t)n, sizeof(int));
-    int *neighbor_cap = xcalloc((size_t)n, sizeof(int));
+/*
+Le o arquivo DUAS vezes, para nao guardar as arestas em memoria temporaria:
+a 1a passada so conta o grau de cada vertice; com os graus, cada vertice
+ganha o seu trecho contiguo no bloco de nos, e a 2a passada escreve cada
+vizinho direto no lugar. Depois, cada trecho e ordenado e encadeado.
+*/
+Node **create_list_graph(const char *archive_directory, int *n_out,
+                         bool *weighted_out, bool *negative_out) {
+    int n = 0;
+    Leitor *leitor = xmalloc(sizeof(Leitor)); /* 64 KB: fora da pilha */
+    FILE *file = abrir_grafo(archive_directory, leitor, &n);
 
+    int *grau = xcalloc((size_t)n + 1, sizeof(int));
+    size_t total = 0; /* nos de vizinho: 2 por aresta (passa de 2^31) */
     bool weighted = false;
     bool negative = false;
-    int ordem = 0;
 
     /* CORRECAO: o arquivo tem n vertices na 1a linha e depois m arestas,
        uma por linha. O laco antigo lia n linhas de aresta, o que so
        funciona quando m == n. Agora lemos ate o fim do arquivo. */
     int a = 0, b = 0;
     double peso = 1.0;
-    while (ler_aresta(&leitor, &a, &b, &peso)) {
-        a -= 1;
-        b -= 1;
-
+    while (ler_aresta(leitor, &a, &b, &peso)) {
         /* laco ("v v"): ignorado. O grafo e tratado como simples - antes o
            laco somava 2 ao grau na lista e 1 na matriz, e as representacoes
            reportavam graus e numeros de arestas diferentes. */
         if (a == b) {
             continue;
         }
-
         if (peso != 1.0) {
             weighted = true;
         }
         if (peso < 0.0) {
             negative = true;
         }
-
-        neighbor_append(neighbor, neighbor_len, neighbor_cap, a, b, peso, ordem);
-        ordem += 1;
-        neighbor_append(neighbor, neighbor_len, neighbor_cap, b, a, peso, ordem);
-        ordem += 1;
+        grau[a - 1] += 1;
+        grau[b - 1] += 1;
+        total += 2;
     }
     fclose(file);
 
+    /* inicio[i]: onde comeca o trecho do vertice i no bloco de vizinhos */
+    size_t *inicio = xmalloc(((size_t)n + 1) * sizeof(size_t));
+    int maior_grau = 0;
+    inicio[0] = 0;
     for (int i = 0; i < n; i++) {
+        inicio[i + 1] = inicio[i] + (size_t)grau[i];
+        if (grau[i] > maior_grau) {
+            maior_grau = grau[i];
+        }
+        grau[i] = 0; /* vira o cursor de escrita da 2a passada */
+    }
+
+    Node **graph = alocar_list_graph(n, total);
+    Node *vizinhos = (n > 0) ? graph[0] + n : NULL; /* depois das sentinelas */
+
+    /* 2a passada: as mesmas arestas, na mesma ordem do arquivo */
+    file = abrir_grafo(archive_directory, leitor, &n);
+    while (ler_aresta(leitor, &a, &b, &peso)) {
+        a -= 1;
+        b -= 1;
+        if (a == b) {
+            continue;
+        }
+        Node *na = &vizinhos[inicio[a] + (size_t)grau[a]++];
+        na->value = b;
+        na->weight = peso;
+        Node *nb = &vizinhos[inicio[b] + (size_t)grau[b]++];
+        nb->value = a;
+        nb->weight = peso;
+    }
+    fclose(file);
+    free(leitor);
+
+    /* no trecho de cada vertice, os vizinhos estao na ordem do arquivo:
+       a posicao no trecho faz o papel da ordem de leitura no desempate */
+    ArestaLida *trecho = xmalloc(((size_t)maior_grau + 1) * sizeof(ArestaLida));
+    for (int i = 0; i < n; i++) {
+        Node *base = &vizinhos[inicio[i]];
+        for (int j = 0; j < grau[i]; j++) {
+            trecho[j].vertice = base[j].value;
+            trecho[j].peso = base[j].weight;
+            trecho[j].ordem = j;
+        }
+
         /* Vizinhos em ordem CRESCENTE: a BFS percorre a lista nessa ordem, a
            mesma da BFS_matrix (for 0..n-1), e as duas representacoes geram a
            mesma arvore. Com a lista decrescente, os empates de nivel eram
            resolvidos de forma diferente e os pais da BFS divergiam. */
-        qsort(neighbor[i], (size_t)neighbor_len[i], sizeof(ArestaLida), comparar_aresta);
+        qsort(trecho, (size_t)grau[i], sizeof(ArestaLida), comparar_aresta);
 
-        for (int j = 0; j < neighbor_len[i]; j++) {
+        Node *ultimo = graph[i];
+        int escritos = 0;
+        for (int j = 0; j < grau[i]; j++) {
             /* aresta repetida no arquivo ("a b" duas vezes, ou "a b" e "b a"):
                ordenadas por (vertice, ordem), a copia fica logo ANTES da
                original e e descartada - vale a ultima linha, como na matriz
                (que sobrescreve o peso a cada linha repetida). */
-            if (j + 1 < neighbor_len[i] && neighbor[i][j + 1].vertice == neighbor[i][j].vertice) {
+            if (j + 1 < grau[i] && trecho[j + 1].vertice == trecho[j].vertice) {
                 continue;
             }
-            if (last_nodes[i] == NULL) {
-                graph[i]->next = Node_create(neighbor[i][j].vertice, neighbor[i][j].peso, NULL);
-                last_nodes[i] = graph[i]->next;
-            } else {
-                last_nodes[i]->next = Node_create(neighbor[i][j].vertice, neighbor[i][j].peso, NULL);
-                last_nodes[i] = last_nodes[i]->next;
-            }
+            Node *no = &base[escritos++];
+            no->value = trecho[j].vertice;
+            no->weight = trecho[j].peso;
+            no->next = NULL;
+            ultimo->next = no;
+            ultimo = no;
         }
-        free(neighbor[i]);
     }
 
-    free(neighbor);
-    free(neighbor_len);
-    free(neighbor_cap);
-    free(last_nodes);
+    free(trecho);
+    free(inicio);
+    free(grau);
 
     *n_out = n;
     *weighted_out = weighted;
@@ -423,14 +473,8 @@ char *str_matrix(MatrixCell **graph, int n) {
 }
 
 void free_list_graph(Node **graph, int n) {
-    for (int i = 0; i < n; i++) {
-        Node *current = graph[i]->next;
-        while (current != NULL) {
-            Node *next = current->next;
-            free(current);
-            current = next;
-        }
-        free(graph[i]); /* o no cabecalho */
+    if (n > 0) {
+        free(graph[0]); /* o bloco com todos os nos (ver alocar_list_graph) */
     }
     free(graph);
 }
