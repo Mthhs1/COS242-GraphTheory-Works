@@ -16,7 +16,7 @@
 #
 # Variaveis de ambiente:
 #     K_DIJKSTRA=100           dijkstras por modo na questao 2
-#     DIJKSTRA_VETOR_MAX=60000 dijkstra com vetor (O(n^2)) so em grafos com
+#     DIJKSTRA_VETOR_MAX=150000 dijkstra com vetor (O(n^2)) so em grafos com
 #                              ate esse numero de vertices; maiores rodam so heap
 #     REDE_COLABORACAO=...     rede de colaboracao (grafo com pesos) e
 #     REDE_NOMES=...           arquivo de nomes: roda a questao da rede
@@ -30,7 +30,7 @@ set -u
 GRAFOS="${1:-../Grafos}"
 RES="${2:-resultados}"
 K_DIJKSTRA="${K_DIJKSTRA:-100}"
-DIJKSTRA_VETOR_MAX="${DIJKSTRA_VETOR_MAX:-60000}"
+DIJKSTRA_VETOR_MAX="${DIJKSTRA_VETOR_MAX:-150000}"
 
 if [ ! -f Makefile ] || [ ! -d "Study cases" ]; then
     echo "rode a partir da pasta do Trabalho 2 (onde fica o Makefile)" >&2

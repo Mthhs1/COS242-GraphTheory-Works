@@ -1,0 +1,3 @@
+grafo: ../Grafos/grafo_W_3.txt | representacao: lista de adjacencia | 100 dijkstras por modo
+vetor media: 31562.9904 ms (min 28595.9160, max 38853.4135)
+heap   media: 194.2533 ms (min 152.5158, max 1060.6725)

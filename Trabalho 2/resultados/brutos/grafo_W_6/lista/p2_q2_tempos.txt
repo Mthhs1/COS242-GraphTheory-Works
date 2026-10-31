@@ -1,0 +1,2 @@
+grafo: ../Grafos/grafo_W_6.txt | representacao: lista de adjacencia | 100 dijkstras por modo
+heap   media: 16901.8702 ms (min 15910.0038, max 18282.1000)
