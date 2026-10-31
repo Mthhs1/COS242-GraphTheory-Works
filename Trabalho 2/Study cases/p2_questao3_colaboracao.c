@@ -6,11 +6,10 @@ strings e a do enunciado).
 
 uso: ./bin/p2_questao3_colaboracao <grafo.txt> <nomes.txt> [vetor|heap]
 
-Formato assumido do arquivo de nomes (o do site da disciplina ainda nao foi
-publicado quando isto foi escrito): a linha i (1-based) contem o nome do
-vertice i, exatamente como os rotulos do grafo. Se o arquivo real vier com
-outro formato (por exemplo "indice nome"), o ajustamento fica na funcao
-encontrar_rotulos abaixo - o resto do programa nao muda.
+Formato do arquivo de nomes do site da disciplina: a linha i (1-based) e
+"i,nome" - o rotulo do vertice, uma virgula e o nome (ex.: "2722,Edsger W.
+Dijkstra"). nome_da_linha descarta o prefixo "i,"; uma linha sem o prefixo
+numerico vale inteira como nome (o formato suposto antes do arquivo sair).
 
 Duas passadas pelo arquivo de nomes (uma para achar os rotulos dos
 pesquisadores, outra para imprimir os caminhos com nomes): a rede tem
@@ -52,6 +51,18 @@ static void tirar_fim_de_linha(char *linha) {
     linha[fim] = '\0';
 }
 
+/* "2722,Edsger W. Dijkstra" -> "Edsger W. Dijkstra": pula o rotulo e a virgula */
+static const char *nome_da_linha(const char *linha) {
+    const char *c = linha;
+    while (*c >= '0' && *c <= '9') {
+        c += 1;
+    }
+    if (c != linha && *c == ',') {
+        return c + 1;
+    }
+    return linha;
+}
+
 /*
 Passada 1: acha o rotulo (1-based) dos pesquisadores no arquivo de nomes.
 Devolve false se algum nao foi encontrado (e imprime quem falta).
@@ -73,12 +84,13 @@ static bool encontrar_rotulos(const char *caminho_nomes, int *rotulo_fonte, int 
     while (fgets(linha, sizeof linha, file) != NULL) {
         rotulo += 1;
         tirar_fim_de_linha(linha);
+        const char *nome = nome_da_linha(linha);
 
-        if (*rotulo_fonte == 0 && strcmp(linha, FONTE) == 0) {
+        if (*rotulo_fonte == 0 && strcmp(nome, FONTE) == 0) {
             *rotulo_fonte = rotulo;
         }
         for (int i = 0; i < N_ALVOS; i++) {
-            if (rotulos_alvos[i] == 0 && strcmp(linha, ALVOS[i]) == 0) {
+            if (rotulos_alvos[i] == 0 && strcmp(nome, ALVOS[i]) == 0) {
                 rotulos_alvos[i] = rotulo;
             }
         }
@@ -130,8 +142,9 @@ static void carregar_nomes_precisos(const char *caminho_nomes, int n, const bool
             continue;
         }
         tirar_fim_de_linha(linha);
-        nomes[indice] = xmalloc(strlen(linha) + 1);
-        strcpy(nomes[indice], linha);
+        const char *nome = nome_da_linha(linha);
+        nomes[indice] = xmalloc(strlen(nome) + 1);
+        strcpy(nomes[indice], nome);
     }
     fclose(file);
 }
