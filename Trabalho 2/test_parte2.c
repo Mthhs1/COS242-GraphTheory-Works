@@ -399,8 +399,17 @@ static void testar_equivalencia_entre_modos(void) {
             inteiros_para_string(rh->parents, g->n, esp);
             imprimir_resultado(descricao, obt, strcmp(obt, esp) == 0, esp);
 
+            /* a "saida facil" (reinsercao) tem de dar as mesmas distancias */
+            DijkstraResult *rr = dijkstra(g, raiz - 1, DIJKSTRA_HEAP_REINSERCAO);
+            snprintf(descricao, MAX_MSG, "reinsercao = heap em dist (%s, raiz %d)",
+                     arquivos[f], raiz);
+            dist_para_string(rr, g->n, obt);
+            dist_para_string(rh, g->n, esp);
+            imprimir_resultado(descricao, obt, strcmp(obt, esp) == 0, esp);
+
             DijkstraResult_free(rv);
             DijkstraResult_free(rh);
+            DijkstraResult_free(rr);
         }
 
         Graph_destroy(g);

@@ -59,7 +59,12 @@ p2_questao2: | $(BIN)
 p2_questao3: | $(BIN)
 	$(CC) $(CFLAGS) -o $(BIN)/p2_questao3 "$(CASOS)/p2_questao3_colaboracao.c" $(LIB)
 
-casos_p2: p2_questao1 p2_questao2 p2_questao3
+# o preco da "saida facil" da dica do professor: heap com decrease-key x
+# reinsercao, nos mesmos vertices iniciais da questao 2
+p2_saida_facil: | $(BIN)
+	$(CC) $(CFLAGS) -o $(BIN)/p2_saida_facil "$(CASOS)/p2_preco_saida_facil.c" $(LIB)
+
+casos_p2: p2_questao1 p2_questao2 p2_questao3 p2_saida_facil
 
 # roda os estudos de caso da Parte 2 (so nos grafos COM PESOS de GRAFOS) e
 # gera resultados/tabelas.md; a questao da rede de colaboracao roda quando
@@ -72,4 +77,4 @@ clean:
 	rm -rf $(BIN)
 
 .PHONY: all test clean test_parte2 heap_demo dijkstra_demo \
-        p2_questao1 p2_questao2 p2_questao3 casos_p2 estudos
+        p2_questao1 p2_questao2 p2_questao3 p2_saida_facil casos_p2 estudos

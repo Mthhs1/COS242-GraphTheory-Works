@@ -33,13 +33,26 @@ typedef struct DistStore {
     int (*extract_min)(struct DistStore *s); /* -1 quando nao resta nada a fazer */
     void (*cleanup)(struct DistStore *s);
 
-    /* campos das duas implementacoes; dist e comum */
+    /* campos das implementacoes; dist e comum */
     int n;
     double *dist;     /* estimativa atual de cada vertice */
     bool *ativo;      /* vetor: ainda nao extraido */
-    bool *finalizado; /* heap: ja extraido (nao volta ao heap) */
+    bool *finalizado; /* heap e reinsercao: ja extraido (nao volta ao heap) */
     MinHeap heap;     /* heap: vertices com estimativa finita */
+
+    /* reinsercao: heap de pares (chave, vertice) que cresce sob demanda */
+    struct Entrada *fila;
+    long fila_tam;
+    long fila_cap;
+
+    long pico;   /* maior numero de entradas no heap durante a execucao */
+    long vazias; /* reinsercao: copias velhas descartadas na extracao */
 } DistStore;
+
+struct Entrada {
+    double chave;
+    int vertice;
+};
 
 /* ------------------------- implementacao: vetor ------------------------- */
 
@@ -96,6 +109,7 @@ static void heap_store_init(DistStore *s, int n, int source) {
 
     MinHeap_init(&s->heap, n);
     MinHeap_insert(&s->heap, source, 0.0); /* a fonte e a primeira estimativa finita */
+    s->pico = 1;
 }
 
 static void heap_store_set(DistStore *s, int v, double dist) {
@@ -108,6 +122,9 @@ static void heap_store_set(DistStore *s, int v, double dist) {
         MinHeap_decrease_key(&s->heap, v, dist);
     } else {
         MinHeap_insert(&s->heap, v, dist); /* primeira vez que v e alcancado */
+        if (s->heap.tamanho > s->pico) {
+            s->pico = s->heap.tamanho;
+        }
     }
 }
 
@@ -123,6 +140,103 @@ static int heap_store_extract_min(DistStore *s) {
 static void heap_store_cleanup(DistStore *s) {
     free(s->finalizado);
     MinHeap_destroy(&s->heap);
+}
+
+/* ------------------ implementacao: reinsercao (saida facil) --------------
+A dica do site: em vez de achar o vertice no heap para diminuir a chave,
+insere-se uma NOVA entrada (chave, vertice) a cada melhora. A primeira vez
+que o vertice sai do heap e a que vale; as outras sao copias velhas e sao
+descartadas (finalizado[]). Nao precisa de posicao[], mas o heap guarda ate
+uma entrada por relaxamento bem-sucedido (ate ~2m) em vez de uma por vertice.
+Existe so para medir esse preco contra o heap com decrease-key.
+*/
+
+static void fila_push(DistStore *s, int v, double chave) {
+    if (s->fila_tam == s->fila_cap) {
+        s->fila_cap *= 2;
+        s->fila = xrealloc(s->fila, (size_t)s->fila_cap * sizeof(struct Entrada));
+    }
+    /* sobe e desce com trocas, como o MinHeap: a comparacao mede so a
+       diferenca de estrategia (reinserir x decrease-key) */
+    long i = s->fila_tam++;
+    s->fila[i].chave = chave;
+    s->fila[i].vertice = v;
+    while (i > 0) {
+        long pai = (i - 1) / 2;
+        if (s->fila[pai].chave <= s->fila[i].chave) {
+            break;
+        }
+        struct Entrada t = s->fila[i];
+        s->fila[i] = s->fila[pai];
+        s->fila[pai] = t;
+        i = pai;
+    }
+    if (s->fila_tam > s->pico) {
+        s->pico = s->fila_tam;
+    }
+}
+
+static struct Entrada fila_pop(DistStore *s) {
+    struct Entrada topo = s->fila[0];
+    s->fila[0] = s->fila[--s->fila_tam];
+    long i = 0;
+    for (;;) {
+        long filho = 2 * i + 1;
+        if (filho >= s->fila_tam) {
+            break;
+        }
+        if (filho + 1 < s->fila_tam && s->fila[filho + 1].chave < s->fila[filho].chave) {
+            filho += 1;
+        }
+        if (s->fila[i].chave <= s->fila[filho].chave) {
+            break;
+        }
+        struct Entrada t = s->fila[i];
+        s->fila[i] = s->fila[filho];
+        s->fila[filho] = t;
+        i = filho;
+    }
+    return topo;
+}
+
+static void reinsercao_init(DistStore *s, int n, int source) {
+    s->n = n;
+    s->dist = xmalloc((size_t)n * sizeof(double));
+    s->finalizado = xmalloc((size_t)n * sizeof(bool));
+    for (int v = 0; v < n; v++) {
+        s->dist[v] = INFINITO_PESO;
+        s->finalizado[v] = false;
+    }
+    s->dist[source] = 0.0;
+
+    s->fila_cap = 1024;
+    s->fila_tam = 0;
+    s->fila = xmalloc((size_t)s->fila_cap * sizeof(struct Entrada));
+    fila_push(s, source, 0.0);
+}
+
+static void reinsercao_set(DistStore *s, int v, double dist) {
+    s->dist[v] = dist;
+    if (!s->finalizado[v]) {
+        fila_push(s, v, dist); /* a entrada antiga de v fica no heap, velha */
+    }
+}
+
+static int reinsercao_extract_min(DistStore *s) {
+    while (s->fila_tam > 0) {
+        struct Entrada e = fila_pop(s);
+        if (!s->finalizado[e.vertice]) {
+            s->finalizado[e.vertice] = true;
+            return e.vertice;
+        }
+        s->vazias += 1; /* copia velha: o vertice ja saiu com chave menor */
+    }
+    return -1;
+}
+
+static void reinsercao_cleanup(DistStore *s) {
+    free(s->finalizado);
+    free(s->fila);
 }
 
 /* ----------------------------- o algoritmo ------------------------------ */
@@ -151,6 +265,18 @@ static void dist_store_heap(DistStore *s) {
     s->finalizado = NULL;
 }
 
+static void dist_store_reinsercao(DistStore *s) {
+    s->init = reinsercao_init;
+    s->get = comum_get;
+    s->set = reinsercao_set;
+    s->extract_min = reinsercao_extract_min;
+    s->cleanup = reinsercao_cleanup;
+    s->n = 0;
+    s->dist = NULL;
+    s->ativo = NULL;
+    s->finalizado = NULL;
+}
+
 DijkstraResult *dijkstra(Graph *g, int source, DijkstraModo modo) {
     if (g->negative_weight) {
         fprintf(stderr,
@@ -162,9 +288,13 @@ DijkstraResult *dijkstra(Graph *g, int source, DijkstraModo modo) {
     DistStore store;
     if (modo == DIJKSTRA_HEAP) {
         dist_store_heap(&store);
+    } else if (modo == DIJKSTRA_HEAP_REINSERCAO) {
+        dist_store_reinsercao(&store);
     } else {
         dist_store_vetor(&store);
     }
+    store.pico = 0;
+    store.vazias = 0;
     store.init(&store, g->n, source);
 
     int *parents = xmalloc((size_t)g->n * sizeof(int));
@@ -194,6 +324,8 @@ DijkstraResult *dijkstra(Graph *g, int source, DijkstraModo modo) {
     DijkstraResult *result = xmalloc(sizeof(DijkstraResult));
     result->dist = store.dist;
     result->parents = parents;
+    result->heap_pico = store.pico;
+    result->extracoes_vazias = store.vazias;
     return result;
 }
 
