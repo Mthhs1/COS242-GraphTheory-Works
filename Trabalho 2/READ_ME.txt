@@ -99,6 +99,16 @@ Onde ficam os pesos: no no da lista (Node.weight) e, na matriz, numa matriz
 double separada, alocada so se o arquivo tem algum peso != 1. O acesso e
 sempre pelo iterador de vizinhanca: neighbor_next entrega (vizinho, peso).
 
+Memoria da lista: todos os nos de um grafo (as sentinelas graph[i] e os
+vizinhos) moram num UNICO bloco que comeca em graph[0], e o arquivo e lido
+em duas passadas (a 1a conta os graus; a 2a escreve cada vizinho direto no
+trecho do seu vertice). Com um malloc por no e vetores temporarios por
+vertice, a leitura gastava ~1,6x mais memoria (W_5: 3,6 GB contra 2,4 GB;
+W_6: 6,1 GB contra 3,8 GB), e no W_7 (50 milhoes de vertices) enchia os
+7,7 GB da maquina e passava a usar swap; agora ele roda com 5,0 GB.
+A estrutura continua a mesma
+lista encadeada de Node; free_list_graph libera o bloco de uma vez.
+
 API (rotulos 1-based; vetores devolvidos indexados em 0):
 
     DijkstraResult *Graph_dijkstra(Graph *g, int inicio, int use_heap);
@@ -123,6 +133,16 @@ implementacoes plugam nele: vetor (minimo por varredura, O(n^2)) e heap
 (decrease-key em O(log n) pelo posicao[vertice] do MinHeap - a "chave
 modificada de forma eficiente" que o enunciado exige).
 
+Terceiro modo, DIJKSTRA_HEAP_REINSERCAO: a "saida facil" da dica do site
+(reinserir o vertice a cada melhora e descartar as copias velhas na
+extracao, sem decrease-key). Mesmas distancias; existe para MEDIR o preco
+dela contra o heap com decrease-key:
+
+    make p2_saida_facil
+    ./bin/p2_saida_facil ../Grafos/grafo_W_3.txt [k]
+        tempo medio, pico de entradas no heap e extracoes descartadas,
+        nos mesmos k vertices iniciais da questao 2.
+
 Testes: ./bin/test_parte2 - leitura da terceira coluna nas duas
 representacoes, duplicatas com pesos diferentes (vale a ultima), Dijkstra com
 vetor = com heap = nas duas representacoes (dist e pais), caminhos,
@@ -144,10 +164,9 @@ Estudos de caso (secao 3 do enunciado da Parte 2; grafos em ../Grafos):
     ./bin/p2_questao3 ../Grafos/rede.txt ../Grafos/nomes.txt [vetor|heap]
         Rede de colaboracao: distancia e caminho minimo entre Edsger W.
         Dijkstra e Alan M. Turing, J. B. Kruskal, Jon M. Kleinberg, Eva
-        Tardos e Daniel R. Figueiredo. Formato assumido do arquivo de
-        nomes: a linha i (1-based) e o nome do vertice i; se o arquivo do
-        site vier diferente, o ajuste fica na funcao encontrar_rotulos,
-        no comeco do programa.
+        Tardos e Daniel R. Figueiredo. Arquivo de nomes do site
+        (rede_colaboracao_vertices.txt): a linha i (1-based) e "i,nome";
+        o programa descarta o prefixo "i," (funcao nome_da_linha).
 
 A API completa da biblioteca (buscas, componentes, diametro, estatisticas,
 arquivos de saida) esta no READ_ME.txt da pasta "Trabalho 1 (Implementação

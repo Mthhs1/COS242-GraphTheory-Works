@@ -1,0 +1,1 @@
+inviavel: a matriz precisaria de 21457672500 MB; memoria disponivel: 7178 MB

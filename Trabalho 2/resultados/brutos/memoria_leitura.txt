@@ -1,0 +1,11 @@
+# pico de memoria (RSS) e tempo do programa da questao 1 (leitura + 1 Dijkstra com heap), leitura da Parte 1 (antigo) x bloco unico (novo)
+# W_7 antigo: interrompido (sinal 15) apos 13 min em swap, sem terminar; o RSS nao inclui os ~1,8 GB de swap
+carregador antigo W_4: 20.47 s, pico 2471448 KB
+carregador novo W_4: 17.90 s, pico 1513364 KB
+carregador antigo W_5: 57.65 s, pico 3727176 KB
+carregador novo W_5: 38.05 s, pico 2426688 KB
+antigo W_6: 99.03 s, pico 6348304 KB, saida 0
+novo W_6: 71.18 s, pico 4008248 KB
+Command terminated by signal 15
+antigo W_7: 782.91 s, pico 7521664 KB, saida 0
+novo W_7: 147.76 s, pico 5286132 KB

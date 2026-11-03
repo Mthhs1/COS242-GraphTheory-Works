@@ -1,0 +1,6 @@
+grafo: ../Grafos/grafo_W_5.txt | n = 10000000 | 20 dijkstras por modo (mesmos inicios da questao 2)
+decrease-key  tempo medio: 14115.3694 ms | pico medio do heap: 6119178 entradas (152.6 MB alocados: 16 bytes x n)
+reinsercao    tempo medio: 13607.5603 ms | pico medio do heap: 10804460 entradas (maximo 10808100; 164.9 MB no pico medio)
+reinsercao    extracoes descartadas (copias velhas) por execucao: 8398945
+distancias identicas nas duas: sim
+pico RSS: 2610216 KB

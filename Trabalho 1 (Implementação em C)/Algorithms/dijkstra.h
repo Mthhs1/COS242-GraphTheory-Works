@@ -27,12 +27,18 @@ Parte 1 servem ao iterador de vizinhanca.
 
 typedef enum {
     DIJKSTRA_VETOR, /* estimativas em vetor; minimo por varredura: O(n^2)  */
-    DIJKSTRA_HEAP   /* estimativas em heap com decrease-key: O(m log n)    */
+    DIJKSTRA_HEAP,  /* estimativas em heap com decrease-key: O(m log n)    */
+    /* a "saida facil" da dica do professor, so para MEDIR o seu preco: sem
+       decrease-key, o vertice e reinserido a cada melhora e as copias velhas
+       sao descartadas na extracao. Mesmo resultado, heap de ate ~m entradas */
+    DIJKSTRA_HEAP_REINSERCAO
 } DijkstraModo;
 
 typedef struct DijkstraResult {
     double *dist; /* dist[v] = INFINITO_PESO se v nao e alcancavel */
     int *parents; /* arvore de caminhos minimos; -1 = raiz ou inalcancavel */
+    long heap_pico;      /* maior numero de entradas no heap (0 no vetor)  */
+    long extracoes_vazias; /* copias velhas descartadas (so na reinsercao) */
 } DijkstraResult;
 
 void DijkstraResult_free(DijkstraResult *result);
