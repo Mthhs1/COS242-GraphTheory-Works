@@ -53,7 +53,8 @@ def tabela(titulo, cabecalho, linhas, nota=None):
     return "\n".join(saida) + "\n"
 
 
-grafos = sorted((p.name for p in BRUTOS.iterdir() if p.is_dir() and p.name != "colaboracao"),
+grafos = sorted((p.name for p in BRUTOS.iterdir()
+                 if p.is_dir() and p.name not in ("colaboracao", "saida_facil")),
                 key=lambda nome: [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", nome)])
 secoes = ["# Estudos de caso da Parte 2 — resultados", ""]
 if AMBIENTE.exists():
@@ -148,6 +149,39 @@ if diferentes:
     nota.append("ATENÇÃO — respostas diferentes entre lista e matriz: " + ", ".join(diferentes) + ".")
 if nota:
     secoes += ["## Conferência entre representações", "", *nota, ""]
+
+# Medicoes complementares (vetor no W_4 e saida facil)
+saida_dir = BRUTOS / "saida_facil"
+w4_vetor_txt = ler("grafo_W_4", "lista", "p2_q2_tempos_vetor.txt")
+if saida_dir.exists() or w4_vetor_txt is not None:
+    comp = ["## Medições complementares", ""]
+    if w4_vetor_txt is not None:
+        v_ms = numero(w4_vetor_txt, r"vetor media: ([\d.]+) ms")
+        if v_ms is not None:
+            comp.append(f"- Dijkstra com vetor no grafo_W_4 (1 execução, O(n²)): {br(v_ms, 0)} ms "
+                        f"≈ {round(v_ms / 60000)} min — `brutos/grafo_W_4/lista/p2_q2_tempos_vetor.txt`.")
+    if saida_dir.exists():
+        linhas_sf = []
+        for g in grafos:
+            arq = saida_dir / f"{g}.txt"
+            if not arq.exists():
+                continue
+            tsf = arq.read_text(encoding="utf-8")
+            dk_ms = numero(tsf, r"decrease-key\s+tempo medio: ([\d.]+) ms")
+            re_ms = numero(tsf, r"reinsercao\s+tempo medio: ([\d.]+) ms")
+            dk_pk = numero(tsf, r"decrease-key.*pico medio do heap: (\d+) entradas", int)
+            re_pk = numero(tsf, r"reinsercao.*pico medio do heap: (\d+) entradas", int)
+            linhas_sf.append([g, br(dk_ms, 2), br(re_ms, 2), br(dk_pk, 0), br(re_pk, 0)])
+        if linhas_sf:
+            comp += [
+                '- O preço da "saída fácil" (heap com reinserção × heap com decrease-key), nos mesmos vértices iniciais da Q2',
+                "  (k = 20 no W_3 a W_5, k = 10 no W_6 e W_7) — `brutos/saida_facil/` (`make p2_saida_facil`):",
+                "",
+                "| Grafo | Decrease-key (ms) | Reinserção (ms) | Pico do heap (decrease-key) | Pico do heap (reinserção) |",
+                "|---|--:|--:|--:|--:|",
+                *["| " + " | ".join(l) + " |" for l in linhas_sf],
+            ]
+    secoes.append("\n".join(comp) + "\n")
 
 (RES / "tabelas.md").write_text("\n".join(secoes), encoding="utf-8")
 print(f"escrito {RES / 'tabelas.md'}")

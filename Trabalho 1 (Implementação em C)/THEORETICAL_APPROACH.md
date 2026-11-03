@@ -16,6 +16,9 @@ typedef unsigned char MatrixCell;
 typedef struct Graph {
     int n;
     bool adj_list;
+    bool weighted;        /* true when the input file has a weight != 1 */
+    bool negative_weight; /* true when any edge has weight < 0          */
+    double **weights;     /* Matrix edge weights, allocated lazily      */
     union {
         Node **list;         /* Adjacency list: array of n singly-linked lists */
         MatrixCell **matrix; /* Adjacency matrix: n x n byte grid              */
@@ -44,20 +47,9 @@ The degree $d(v)$ represents the number of edges incident to vertex $v$.
 
 ```c
 int degree(Graph *g, int v) {
-    if (g->adj_list) {
-        int d = 0;
-        Node *node = g->graph.list[v]->next;
-        while (node != NULL) {
-            d += 1;
-            node = node->next;
-        }
-        return d;
-    }
-
-    int d = 0;
-    for (int u = 0; u < g->n; u++) {
-        d += g->graph.matrix[v][u];
-    }
+    int d = 0, u;
+    NeighborIter it = neighbor_iter(g, v);
+    while (neighbor_next(&it, &u, NULL)) d++;
     return d;
 }
 ```
@@ -77,10 +69,10 @@ int degree(Graph *g, int v) {
 
 ---
 
-### 2.3. Neighborhood Query (`neighbors(g, v)`)
-Returns an allocated dynamically sized array containing the neighbor vertex indices of $v$:
-- **Adjacency List**: Traverses the linked list to count elements, allocates `int[count]`, and copies values. Time: $\Theta(d(v))$.
-- **Adjacency Matrix**: Scans row $v$, counts `1`s, allocates `int[count]`, and fills indices where $M[v][u] == 1$. Time: $\Theta(n)$.
+### 2.3. Zero-Allocation Neighborhood Iterator (`NeighborIter`)
+Provides a unified `static inline` gateway (`neighbor_iter(g, v)` / `neighbor_next(&it, &u, &w)`) over both representations without heap allocation:
+- **Adjacency List**: Steps through `Node *next` in $\Theta(d(v))$ total time, reading `node->data` and `node->weight`.
+- **Adjacency Matrix**: Scans row $v$ in $\Theta(n)$ total time, yielding indices where $M[v][u] == 1$ and reading `g->weights[v][u]` (or $1.0$ if unweighted).
 
 ---
 
@@ -196,3 +188,5 @@ where $\epsilon(u) = \max_{v \in C(u)} d(u, v)$ is the eccentricity of $u$. For 
    Input files can exceed 700 MB (`grafo_6.txt`). Using a 64 KB block buffer (`fread`) with manual ASCII-to-integer conversion reduced loading time from minutes to under a second.
 4. **Linear String Accumulator (`StrBuf`)**:
    Generating output files for massive graphs involves millions of formatting operations. `StrBuf` implements exponential buffer doubling ($O(1)$ amortized append), avoiding the $O(n^2)$ overhead of repeated `strlen` and `realloc` with `str_append`.
+5. **Two-Pass Single-Block Adjacency List (`alocar_list_graph`)**:
+   Instead of calling `malloc` per edge node (which adds 8 bytes of allocator metadata per 24-byte `Node` plus temporary per-vertex edge vectors), pass 1 counts vertex degrees and allocates a single contiguous block of `n + 2m` `Node`s anchored at `graph[0]`, and pass 2 writes sorted neighbors in place. This reduces peak RAM by ~35–39% and allows `grafo_W_7` (50M vertices, 60M edges) to run in 5.0 GB RAM without swap.

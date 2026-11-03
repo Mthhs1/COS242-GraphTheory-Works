@@ -71,9 +71,9 @@ que a linguagem C exige ou nao oferece.
   entrega um vizinho por vez, percorrendo a lista encadeada ou a linha da
   matriz. Nao aloca nada e e `static inline`, entao o compilador coloca o
   laco direto em quem chama - e o gerador do Python sem o custo dele.
-- O dict {i: []} do create_list_graph vira vetores dinamicos
-  (neighbor/neighbor_len/neighbor_cap) com a funcao auxiliar
-  neighbor_append(), que faz o papel do .append do Python.
+- O dict {i: []} do create_list_graph e construido em duas passadas num
+  UNICO bloco contiguo de Node (alocar_list_graph): a 1a passada conta os
+  graus e fatia o bloco; a 2a escreve cada vizinho no trecho do seu vertice.
 
 --------------------------------------------------------------------------------
 7. MEMORIA (COLETOR DE LIXETO -> FREE EXPLICITO)

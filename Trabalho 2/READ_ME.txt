@@ -9,7 +9,7 @@ a abstracao de como as estimativas sao guardadas e o minimo extraido, como
 pede o enunciado.
 
 Os fontes da biblioteca (graph, graph_gen, graph_utils, DataStructures/ e
-Algorithms/, menos heap.c e dijkstra.c) sao IDENTICOS aos da pasta
+Algorithms/, incluindo heap.c e dijkstra.c) sao IDENTICOS aos da pasta
 "Trabalho 1 (Implementação em C)": a Parte 2 estendeu a mesma biblioteca - o
 no ganhou o campo do peso, a matriz ganhou uma matriz de pesos separada, o
 iterador de vizinhanca passou a entregar (vizinho, peso) e foram acrescentados
@@ -64,7 +64,7 @@ Demos (constroem e rodam):
     make heap_demo      insert/decrease_key/extract_min do heap
     make dijkstra_demo  distancias e caminhos com vetor e com heap
 
-Programas (constroem e rodam; detalhes na secao 3):
+Programas dos estudos de caso (compilam em bin/; detalhes na secao 3):
     make p2_questao1  make p2_questao2  make p2_questao3
 
 Os executaveis ficam em bin/ e rodam A PARTIR DESTA PASTA (caminhos relativos;
@@ -103,7 +103,7 @@ Memoria da lista: todos os nos de um grafo (as sentinelas graph[i] e os
 vizinhos) moram num UNICO bloco que comeca em graph[0], e o arquivo e lido
 em duas passadas (a 1a conta os graus; a 2a escreve cada vizinho direto no
 trecho do seu vertice). Com um malloc por no e vetores temporarios por
-vertice, a leitura gastava ~1,6x mais memoria (W_5: 3,6 GB contra 2,4 GB;
+vertice, a leitura gastava ~1,6x mais memoria (W_5: 3,6 GB contra 2,3 GB;
 W_6: 6,1 GB contra 3,8 GB), e no W_7 (50 milhoes de vertices) enchia os
 7,7 GB da maquina e passava a usar swap; agora ele roda com 5,0 GB.
 A estrutura continua a mesma
