@@ -4,8 +4,7 @@ __pycache__/
 *.pyc
 
 # executaveis gerados pelo make (recrie com `make all casos`)
-Trabalho 1 (Implementação em C)/bin/
-Trabalho 2/bin/
+bin/
 *.o
 
 # grafos do estudo de caso (centenas de MB; baixe do site da disciplina)
