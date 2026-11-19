@@ -277,14 +277,16 @@ static void dist_store_reinsercao(DistStore *s) {
     s->finalizado = NULL;
 }
 
-DijkstraResult *dijkstra(Graph *g, int source, DijkstraModo modo) {
-    if (g->negative_weight) {
-        fprintf(stderr,
-                "o grafo tem aresta(s) com peso negativo: use o Bellman-Ford "
-                "ou o Floyd-Warshall (Parte 3), que aceitam pesos negativos\n");
-        return NULL;
-    }
-
+/*
+O laco do algoritmo, escrito uma vez. `h` e opcional: NULL e o Dijkstra de
+sempre; com h, cada aresta u->v vale o peso REDUZIDO peso + h[u] - h[v] - o
+que o algoritmo de Johnson (johnson.c) usa para rodar o Dijkstra num grafo
+com pesos negativos, sem copiar nem reescrever o grafo. Com h vindo do
+Bellman-Ford, todo peso reduzido e >= 0; o max com 0 so absorve o erro de
+arredondamento do double (-1e-15 nao pode virar "atalho").
+*/
+static DijkstraResult *dijkstra_nucleo(Graph *g, int source, DijkstraModo modo,
+                                       const double *h) {
     DistStore store;
     if (modo == DIJKSTRA_HEAP) {
         dist_store_heap(&store);
@@ -310,6 +312,12 @@ DijkstraResult *dijkstra(Graph *g, int source, DijkstraModo modo) {
         double peso;
         NeighborIter it = neighbor_iter(g, u);
         while (neighbor_next(&it, &v, &peso)) {
+            if (h != NULL) {
+                peso += h[u] - h[v];
+                if (peso < 0.0) {
+                    peso = 0.0;
+                }
+            }
             double alternativa = du + peso;
             if (alternativa < store.get(&store, v)) {
                 store.set(&store, v, alternativa);
@@ -327,6 +335,20 @@ DijkstraResult *dijkstra(Graph *g, int source, DijkstraModo modo) {
     result->heap_pico = store.pico;
     result->extracoes_vazias = store.vazias;
     return result;
+}
+
+DijkstraResult *dijkstra(Graph *g, int source, DijkstraModo modo) {
+    if (g->negative_weight) {
+        fprintf(stderr,
+                "o grafo tem aresta(s) com peso negativo: use o Bellman-Ford "
+                "ou o Floyd-Warshall (Parte 3), que aceitam pesos negativos\n");
+        return NULL;
+    }
+    return dijkstra_nucleo(g, source, modo, NULL);
+}
+
+DijkstraResult *dijkstra_reduzido(Graph *g, int source, const double *h) {
+    return dijkstra_nucleo(g, source, DIJKSTRA_HEAP, h);
 }
 
 int *dijkstra_path(DijkstraResult *result, int alvo, int *comprimento_out) {

@@ -16,22 +16,77 @@ que nao mudam na passada k (intermediario k nao melhora caminho que ja
 passa por k), por isso atualizar no lugar da o mesmo resultado que
 guardar as n matrizes D[k].
 
-Os INF sao testados ANTES de somar: infinito + peso negativo nao pode
-virar um "infinito menor" e roubar o lugar de um caminho que existe.
+Otimizacoes de tempo (as distancias sao as mesmas do triplo laco classico):
+
+  - MATRIZ CONTIGUA: as n linhas moram num unico bloco de n*n (dist[i] e
+    pred[i] continuam sendo ponteiros para as linhas, entao quem usa o
+    resultado nao muda). Uma alocacao em vez de 2n, e as linhas vizinhas
+    ficam vizinhas na memoria.
+  - SEM TESTE DE INF NO LACO INTERNO: INFINITO_PESO e o +infinito do IEEE
+    754, e inf + x = inf para qualquer x finito, negativo inclusive - um
+    "infinito menor" nao existe, entao a soma ja da a resposta certa e o
+    laco interno fica sem desvio (o compilador o vetoriza). O teste de
+    dist[i][k] == INF continua, fora do laco interno: ele pula a linha
+    inteira quando k nao serve de intermediario para i.
+  - EM BLOCOS (tiling): o FW classico percorre a matriz inteira (n^2
+    doubles) a cada k, e para n grande ela nao cabe no cache - o tempo vai
+    para a memoria, nao para as contas. A versao em blocos B x B processa B
+    valores de k de uma vez sobre blocos que cabem no cache, na ordem que
+    respeita as dependencias: (1) o bloco da diagonal (k, k); (2) os blocos
+    da mesma linha e da mesma coluna, que dependem dele; (3) todos os
+    outros, que dependem dos da fase 2. A complexidade continua O(n^3); o
+    acesso a memoria cai cerca de B vezes. Em empates (dois caminhos minimos
+    de mesmo custo) a ordem diferente pode escolher outro predecessor -
+    outro caminho, igualmente minimo. Com n <= B ha um bloco so e a ordem e
+    exatamente a classica.
 */
+#define FW_BLOCO 64
+
+/* o FW classico restrito a: k em [kb, kb+nk), i em [ib, ib+ni), j em [jb, jb+nj) */
+static void fw_bloco(double **dist, int **pred, int kb, int nk,
+                     int ib, int ni, int jb, int nj) {
+    for (int k = kb; k < kb + nk; k++) {
+        const double *dist_k = dist[k];
+        const int *pred_k = pred[k];
+        for (int i = ib; i < ib + ni; i++) {
+            double dik = dist[i][k];
+            if (dik == INFINITO_PESO) {
+                continue; /* k nao serve de intermediario para i */
+            }
+            double *dist_i = dist[i];
+            int *pred_i = pred[i];
+            for (int j = jb; j < jb + nj; j++) {
+                double alternativa = dik + dist_k[j]; /* inf + x = inf */
+                if (alternativa < dist_i[j]) {
+                    dist_i[j] = alternativa; /* no lugar: memoria O(n^2) */
+                    /* o ultimo passo do caminho i->k->j e o mesmo do
+                       caminho k->j: herda o predecessor */
+                    pred_i[j] = pred_k[j];
+                }
+            }
+        }
+    }
+}
+
 FloydWarshallResult *floyd_warshall(Graph *g) {
     int n = g->n;
 
-    double **dist = xmalloc((size_t)n * sizeof(double *));
-    int **pred = xmalloc((size_t)n * sizeof(int *));
+    double **dist = xmalloc((size_t)(n > 0 ? n : 1) * sizeof(double *));
+    int **pred = xmalloc((size_t)(n > 0 ? n : 1) * sizeof(int *));
+    double *bloco_dist = xmalloc(((size_t)n * (size_t)n > 0 ? (size_t)n * (size_t)n : 1) * sizeof(double));
+    int *bloco_pred = xmalloc(((size_t)n * (size_t)n > 0 ? (size_t)n * (size_t)n : 1) * sizeof(int));
     for (int i = 0; i < n; i++) {
-        dist[i] = xmalloc((size_t)n * sizeof(double));
-        pred[i] = xmalloc((size_t)n * sizeof(int));
+        dist[i] = bloco_dist + (size_t)i * (size_t)n;
+        pred[i] = bloco_pred + (size_t)i * (size_t)n;
         for (int j = 0; j < n; j++) {
             dist[i][j] = INFINITO_PESO;
             pred[i][j] = -1; /* sem aresta direta */
         }
         dist[i][i] = 0.0; /* caminho vazio de i a i */
+    }
+    if (n == 0) {
+        dist[0] = bloco_dist; /* para o free do resultado */
+        pred[0] = bloco_pred;
     }
 
     /* as arestas do arquivo: dist[i][j] = peso(i, j), pred[i][j] = i */
@@ -48,25 +103,35 @@ FloydWarshallResult *floyd_warshall(Graph *g) {
         }
     }
 
-    for (int k = 0; k < n; k++) {
-        for (int i = 0; i < n; i++) {
-            if (dist[i][k] == INFINITO_PESO) {
-                continue; /* k nao serve de intermediario para i */
+    /* as tres fases para cada faixa de k [kb, kb+nk) */
+    for (int kb = 0; kb < n; kb += FW_BLOCO) {
+        int nk = (n - kb < FW_BLOCO) ? n - kb : FW_BLOCO;
+
+        /* (1) o bloco da diagonal */
+        fw_bloco(dist, pred, kb, nk, kb, nk, kb, nk);
+
+        /* (2) a linha e a coluna de blocos da faixa k */
+        for (int b = 0; b < n; b += FW_BLOCO) {
+            if (b == kb) {
+                continue;
             }
-            double dik = dist[i][k];
-            double *dist_k = dist[k]; /* so alias, para indexar uma vez */
-            int *pred_k = pred[k];
-            for (int j = 0; j < n; j++) {
-                if (dist_k[j] == INFINITO_PESO) {
-                    continue; /* j nao e alcancavel a partir de k */
+            int nb = (n - b < FW_BLOCO) ? n - b : FW_BLOCO;
+            fw_bloco(dist, pred, kb, nk, kb, nk, b, nb); /* linha  */
+            fw_bloco(dist, pred, kb, nk, b, nb, kb, nk); /* coluna */
+        }
+
+        /* (3) todo o resto */
+        for (int ib = 0; ib < n; ib += FW_BLOCO) {
+            if (ib == kb) {
+                continue;
+            }
+            int ni = (n - ib < FW_BLOCO) ? n - ib : FW_BLOCO;
+            for (int jb = 0; jb < n; jb += FW_BLOCO) {
+                if (jb == kb) {
+                    continue;
                 }
-                double alternativa = dik + dist_k[j];
-                if (alternativa < dist[i][j]) {
-                    dist[i][j] = alternativa; /* no lugar: memoria O(n^2) */
-                    /* o ultimo passo do caminho i->k->j e o mesmo do
-                       caminho k->j: herda o predecessor */
-                    pred[i][j] = pred_k[j];
-                }
+                int nj = (n - jb < FW_BLOCO) ? n - jb : FW_BLOCO;
+                fw_bloco(dist, pred, kb, nk, ib, ni, jb, nj);
             }
         }
     }
@@ -125,10 +190,8 @@ void FloydWarshallResult_free(FloydWarshallResult *result) {
     if (result == NULL) {
         return;
     }
-    for (int i = 0; i < result->n; i++) {
-        free(result->dist[i]);
-        free(result->pred[i]);
-    }
+    free(result->dist[0]); /* o bloco contiguo com todas as linhas */
+    free(result->pred[0]);
     free(result->dist);
     free(result->pred);
     free(result);
