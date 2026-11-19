@@ -36,7 +36,16 @@ estudos: p3_estudos
 sinteticos:
 	python3 gerar_digrafos_teste.py "$(GRAFOS)-sinteticos"
 
+# bancadas de otimizacoes que NAO estao na biblioteca (SPFA, varredura
+# alternada, paralelismo com OpenMP) - ver otimizacoes/LEIA-ME.md
+otimizacoes:
+	mkdir -p $(BIN)
+	$(CC) $(CFLAGS) -fopenmp $(INC) -o $(BIN)/bancada_bf_todos_pares \
+	    otimizacoes/bancada_bf_todos_pares.c $(LIB) -lm
+	$(CC) $(CFLAGS) -fopenmp -o $(BIN)/bancada_floyd_warshall \
+	    otimizacoes/bancada_floyd_warshall.c -lm
+
 clean:
 	rm -rf $(BIN)
 
-.PHONY: all p3_estudos estudos sinteticos clean
+.PHONY: all p3_estudos estudos sinteticos otimizacoes clean
