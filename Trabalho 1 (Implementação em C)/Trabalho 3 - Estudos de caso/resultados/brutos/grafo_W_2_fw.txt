@@ -1,9 +1,9 @@
 grafo: grafo_W_2
-n 25000 m 824964 pesos_negativos nao leitura 0.132 s
+n 25000 m 824964 pesos_negativos nao leitura 0.124 s
 
 == Q2: Floyd-Warshall, distancias entre {10, 20, 30, 40, 50} ==
 modo: economico (float, 8 n^2 bytes)
-tempo deste floyd_warshall 1612.750 s
+tempo deste floyd_warshall 1781.915 s
 ciclo negativo no grafo: nao
 q2 10 10 0
 q2 10 20 11.7300005
@@ -32,6 +32,6 @@ q2 50 40 8.260000229
 q2 50 50 0
 conferencia FW x BF (linhas de 10..50 inteiras): maior diferenca 1.6e-06, alcancabilidade divergente em 0 pares
 
-== Q3: tempo medio de cada algoritmo (1 rodadas, s) ==
-tempo bellman_ford_to 0.035884 min 0.035884 max 0.035884
-tempo floyd_warshall 1612.750129 min 1612.750129 max 1612.750129 rodadas 1 modo economico
+== Q3: tempo medio de cada algoritmo (10 rodadas, s) ==
+tempo bellman_ford_to 0.028883 min 0.026304 max 0.035527
+tempo floyd_warshall 1517.555063 min 1384.691776 max 1781.914794 rodadas 10 modo economico

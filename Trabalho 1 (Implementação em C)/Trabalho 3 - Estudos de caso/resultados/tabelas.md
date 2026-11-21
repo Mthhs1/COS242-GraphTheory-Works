@@ -83,8 +83,8 @@ O grafo tem ciclo negativo (dist[i][i] < 0 para algum i): as distâncias não s�
 
 | Grafo | Bellman-Ford (todos → 100) | Floyd-Warshall |
 |---|--:|--:|
-| grafo_W_1 | 0,011 s | 2,254 s |
-| grafo_W_2 | 0,030 s | 1.612,750 s |
+| grafo_W_1 | 0,011 s | 2,818 s |
+| grafo_W_2 | 0,030 s | 1.517,555 s |
 | grafo_W_3 | 0,335 s | — |
 | grafo_W_4 | 3,471 s | — |
 | grafo_W_5 | 17,065 s | — |
@@ -95,8 +95,8 @@ O cronômetro cobre só o algoritmo (sem leitura nem escrita em disco). O Bellma
 
 | Grafo | n × Bellman-Ford | Floyd-Warshall | Johnson | Conferência |
 |---|--:|--:|--:|--:|
-| grafo_W_1 | 27,228 s | 2,254 s | 2,371 ms | ciclo negativo no grafo (johnson) - distancias nao definidas |
-| grafo_W_2 | 319,993 s | 1.612,750 s | 333,308 s | 25000 fontes, 625000000 pares alcancaveis, maior diferenca 0, alcancabilidade divergente em 0 pares (BF x Johnson; FW inviavel) |
+| grafo_W_1 | 27,228 s | 2,818 s | 2,371 ms | ciclo negativo no grafo (johnson) - distancias nao definidas |
+| grafo_W_2 | 319,993 s | 1.517,555 s | 333,308 s | 25000 fontes, 625000000 pares alcancaveis, maior diferenca 0, alcancabilidade divergente em 0 pares (BF x Johnson; FW inviavel) |
 | grafo_W_3 | 9.324,098 s (est.) | — | 9.451,318 s (est.) | 20 fontes, 2000000 pares alcancaveis, maior diferenca 0, alcancabilidade divergente em 0 pares (BF x Johnson; FW inviavel) |
 | grafo_W_4 | 1.137.210,501 s (est.) | — | 1.765.755,932 s (est.) | 5 fontes, 5000000 pares alcancaveis, maior diferenca 0, alcancabilidade divergente em 0 pares (BF x Johnson; FW inviavel) |
 | grafo_W_5 | 160.716.247,753 s (est.) | — | 153.012.129,704 s (est.) | 3 fontes, 30000000 pares alcancaveis, maior diferenca 0, alcancabilidade divergente em 0 pares (BF x Johnson; FW inviavel) |
