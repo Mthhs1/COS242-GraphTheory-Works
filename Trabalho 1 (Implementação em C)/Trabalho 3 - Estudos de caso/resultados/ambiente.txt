@@ -1,0 +1,8 @@
+data: 2026-11-21 09:18
+commit: tp3-estudos
+sistema: Linux 6.18.58.1-microsoft-standard-WSL2 x86_64
+processador: 12th Gen Intel(R) Core(TM) i5-12400F
+memoria total: 7.7 GB
+compilador: gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
+flags: -std=c11 -Wall -Wextra -O3 -march=native
+rodadas: 10

@@ -16,83 +16,103 @@ que nao mudam na passada k (intermediario k nao melhora caminho que ja
 passa por k), por isso atualizar no lugar da o mesmo resultado que
 guardar as n matrizes D[k].
 
-Os INF sao testados ANTES de somar: infinito + peso negativo nao pode
-virar um "infinito menor" e roubar o lugar de um caminho que existe.
+Otimizacoes de tempo (as distancias sao as mesmas do triplo laco classico):
+
+  - MATRIZ CONTIGUA: as n linhas moram num unico bloco de n*n (dist[i] e
+    pred[i] continuam sendo ponteiros para as linhas, entao quem usa o
+    resultado nao muda). Uma alocacao em vez de 2n, e as linhas vizinhas
+    ficam vizinhas na memoria.
+  - SEM TESTE DE INF NO LACO INTERNO: INFINITO_PESO e o +infinito do IEEE
+    754, e inf + x = inf para qualquer x finito, negativo inclusive - um
+    "infinito menor" nao existe, entao a soma ja da a resposta certa e o
+    laco interno fica sem desvio (o compilador o vetoriza). O teste de
+    dist[i][k] == INF continua, fora do laco interno: ele pula a linha
+    inteira quando k nao serve de intermediario para i.
+  - PARADA ANTECIPADA: assim que algum dist[i][i] fica negativo (conferido
+    ao fim de cada faixa de 64 valores de k), o ciclo negativo esta provado
+    e o algoritmo para.
+  - EM BLOCOS (tiling): o FW classico percorre a matriz inteira (n^2
+    doubles) a cada k, e para n grande ela nao cabe no cache - o tempo vai
+    para a memoria, nao para as contas. A versao em blocos B x B processa B
+    valores de k de uma vez sobre blocos que cabem no cache, na ordem que
+    respeita as dependencias: (1) o bloco da diagonal (k, k); (2) os blocos
+    da mesma linha e da mesma coluna, que dependem dele; (3) todos os
+    outros, que dependem dos da fase 2. A complexidade continua O(n^3); o
+    acesso a memoria cai cerca de B vezes. Em empates (dois caminhos minimos
+    de mesmo custo) a ordem diferente pode escolher outro predecessor -
+    outro caminho, igualmente minimo. Com n <= B ha um bloco so e a ordem e
+    exatamente a classica.
+
+O MODO ECONOMICO (floyd_warshall_economico) guarda as distancias em float:
+8 n^2 bytes em vez de 12 n^2 - com n = 25000, 5 GB em vez de 7,5 GB. E o
+MESMO nucleo (floyd_warshall_nucleo.h, instanciado para double e para
+float); o preco e a precisao, cerca de 7 algarismos significativos.
 */
+#define FW_BLOCO 64
+
+/* as duas instancias do nucleo (floyd_warshall_nucleo.h): double e float */
+#define TIPO double
+#define SUF _d
+#include "floyd_warshall_nucleo.h"
+#undef TIPO
+#undef SUF
+#define TIPO float
+#define SUF _f
+#include "floyd_warshall_nucleo.h"
+#undef TIPO
+#undef SUF
+
+/* aloca uma matriz n x n contigua de `tamanho` bytes por celula, com o
+   vetor de ponteiros para as linhas (linhas[i] = bloco + i*n) */
+static void **matriz_contigua(int n, size_t tamanho) {
+    size_t celulas = (size_t)n * (size_t)n;
+    char *bloco = xmalloc((celulas > 0 ? celulas : 1) * tamanho);
+    void **linhas = xmalloc((size_t)(n > 0 ? n : 1) * sizeof(void *));
+    linhas[0] = bloco; /* tambem com n == 0: o free usa linhas[0] */
+    for (int i = 0; i < n; i++) {
+        linhas[i] = bloco + (size_t)i * (size_t)n * tamanho;
+    }
+    return linhas;
+}
+
+static void liberar_matriz(void **linhas) {
+    if (linhas != NULL) {
+        free(linhas[0]); /* o bloco contiguo com todas as linhas */
+        free(linhas);
+    }
+}
+
 FloydWarshallResult *floyd_warshall(Graph *g) {
-    int n = g->n;
-
-    double **dist = xmalloc((size_t)n * sizeof(double *));
-    int **pred = xmalloc((size_t)n * sizeof(int *));
-    for (int i = 0; i < n; i++) {
-        dist[i] = xmalloc((size_t)n * sizeof(double));
-        pred[i] = xmalloc((size_t)n * sizeof(int));
-        for (int j = 0; j < n; j++) {
-            dist[i][j] = INFINITO_PESO;
-            pred[i][j] = -1; /* sem aresta direta */
-        }
-        dist[i][i] = 0.0; /* caminho vazio de i a i */
-    }
-
-    /* as arestas do arquivo: dist[i][j] = peso(i, j), pred[i][j] = i */
-    for (int i = 0; i < n; i++) {
-        int j;
-        double peso;
-        NeighborIter it = neighbor_iter(g, i);
-        while (neighbor_next(&it, &j, &peso)) {
-            if (peso < dist[i][j]) { /* entre duplicatas vale a menor: a
-                                        leitura ja fundiu, isto e so defesa */
-                dist[i][j] = peso;
-                pred[i][j] = i;
-            }
-        }
-    }
-
-    for (int k = 0; k < n; k++) {
-        for (int i = 0; i < n; i++) {
-            if (dist[i][k] == INFINITO_PESO) {
-                continue; /* k nao serve de intermediario para i */
-            }
-            double dik = dist[i][k];
-            double *dist_k = dist[k]; /* so alias, para indexar uma vez */
-            int *pred_k = pred[k];
-            for (int j = 0; j < n; j++) {
-                if (dist_k[j] == INFINITO_PESO) {
-                    continue; /* j nao e alcancavel a partir de k */
-                }
-                double alternativa = dik + dist_k[j];
-                if (alternativa < dist[i][j]) {
-                    dist[i][j] = alternativa; /* no lugar: memoria O(n^2) */
-                    /* o ultimo passo do caminho i->k->j e o mesmo do
-                       caminho k->j: herda o predecessor */
-                    pred[i][j] = pred_k[j];
-                }
-            }
-        }
-    }
-
-    /* ciclo negativo: o menor passeio fechado por i custa menos que 0.
-       Um passeio fechado negativo sempre passa por um ciclo negativo - e
-       qualquer ciclo negativo do grafo aparece no vertice dele. */
-    bool ciclo_negativo = false;
-    for (int i = 0; i < n; i++) {
-        if (dist[i][i] < 0.0) {
-            ciclo_negativo = true;
-            break;
-        }
-    }
-
     FloydWarshallResult *result = xmalloc(sizeof(FloydWarshallResult));
-    result->n = n;
-    result->dist = dist;
-    result->pred = pred;
-    result->negative_cycle = ciclo_negativo;
+    result->n = g->n;
+    result->dist = (double **)matriz_contigua(g->n, sizeof(double));
+    result->dist32 = NULL;
+    result->pred = (int **)matriz_contigua(g->n, sizeof(int));
+    result->negative_cycle = fw_rodar_d(g, result->dist, result->pred);
     return result;
+}
+
+FloydWarshallResult *floyd_warshall_economico(Graph *g) {
+    FloydWarshallResult *result = xmalloc(sizeof(FloydWarshallResult));
+    result->n = g->n;
+    result->dist = NULL;
+    result->dist32 = (float **)matriz_contigua(g->n, sizeof(float));
+    result->pred = (int **)matriz_contigua(g->n, sizeof(int));
+    result->negative_cycle = fw_rodar_f(g, result->dist32, result->pred);
+    return result;
+}
+
+double floyd_warshall_dist(FloydWarshallResult *result, int origem, int destino) {
+    if (result->dist != NULL) {
+        return result->dist[origem][destino];
+    }
+    float d = result->dist32[origem][destino];
+    return (d == (float)INFINITO_PESO) ? INFINITO_PESO : (double)d;
 }
 
 int *floyd_warshall_path(FloydWarshallResult *result, int origem, int destino,
                          int *comprimento_out) {
-    if (result->dist[origem][destino] == INFINITO_PESO) {
+    if (floyd_warshall_dist(result, origem, destino) == INFINITO_PESO) {
         *comprimento_out = 0;
         return NULL;
     }
@@ -125,12 +145,9 @@ void FloydWarshallResult_free(FloydWarshallResult *result) {
     if (result == NULL) {
         return;
     }
-    for (int i = 0; i < result->n; i++) {
-        free(result->dist[i]);
-        free(result->pred[i]);
-    }
-    free(result->dist);
-    free(result->pred);
+    liberar_matriz((void **)result->dist);
+    liberar_matriz((void **)result->dist32);
+    liberar_matriz((void **)result->pred);
     free(result);
 }
 

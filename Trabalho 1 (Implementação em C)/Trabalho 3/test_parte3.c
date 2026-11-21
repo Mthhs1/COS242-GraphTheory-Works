@@ -63,6 +63,7 @@ O que os testes conferem, alem dos valores manuais:
 #include "dijkstra.h"
 #include "bellman_ford.h"
 #include "floyd_warshall.h"
+#include "johnson.h"
 
 #define DIRECIONADO "graph_teste_direcionado.txt"
 #define DIRECIONADO_NEGATIVO "graph_teste_direcionado_negativo.txt"
@@ -73,6 +74,10 @@ O que os testes conferem, alem dos valores manuais:
 #define EXEMPLO "graph_exemplo.txt"
 #define EXEMPLO_PESOS_POSITIVOS "graph_exemplo_pesos_positivos.txt"
 #define ROTULO_INVALIDO "graph_teste_rotulo_invalido.txt"
+/* 150 vertices (mais de um bloco de 64 no Floyd-Warshall em blocos), pesos
+   negativos sem ciclo negativo: gerado por "Trabalho 3 - Estudos de caso/
+   gerar_digrafos_teste.py" (truque do potencial, semente 42) */
+#define DIGRAFO_150 "graph_teste_digrafo_150.txt"
 
 #define MAX_FALHAS 64
 #define MAX_MSG 256
@@ -374,8 +379,12 @@ static void testar_bellman_ford(bool adj_list) {
     checar_string(descricao, obt, "[-1, 0, 0, 1, 3]");
     snprintf(descricao, MAX_MSG, "bellman-ford(1): sem ciclo negativo [%s]", rep);
     checar_bool(descricao, r->negative_cycle, false);
-    snprintf(descricao, MAX_MSG, "bellman-ford(1): convergiu em 2 passadas [%s]", rep);
-    checar_int(descricao, r->passadas, 2);
+    /* com a lista de ativos, a passada que so CONFIRMARIA que nada muda
+       nao e feita: sem vertice ativo, ja se sabe. Antes eram 2 passadas
+       (1 que relaxa + 1 de confirmacao); a ordem crescente resolve tudo
+       na 1a. */
+    snprintf(descricao, MAX_MSG, "bellman-ford(1): convergiu em 1 passada [%s]", rep);
+    checar_int(descricao, r->passadas, 1);
 
     /* caminho 1 -> 5: 1, 2, 4, 5 (custo -1) */
     int comprimento = 0;
@@ -416,16 +425,16 @@ static void testar_bellman_ford(bool adj_list) {
     snprintf(descricao, MAX_MSG, "bellman-ford(1) no digrafo positivo: pais [%s]", rep);
     inteiros_para_string(r->parents, p->n, obt);
     checar_string(descricao, obt, "[-1, 0, 0, 1, 3, 4, -1]");
-    snprintf(descricao, MAX_MSG, "bellman-ford(1) no digrafo positivo: 2 passadas [%s]", rep);
-    checar_int(descricao, r->passadas, 2);
+    snprintf(descricao, MAX_MSG, "bellman-ford(1) no digrafo positivo: 1 passada [%s]", rep);
+    checar_int(descricao, r->passadas, 1);
     BellmanFordResult_free(r);
 
     r = bellman_ford(p, 6);
     snprintf(descricao, MAX_MSG, "bellman-ford(7) no digrafo positivo: distancias [%s]", rep);
     dist_para_string(r->dist, p->n, obt);
     checar_string(descricao, obt, "[5, 8, 13, 10, 11, 15, 0]");
-    snprintf(descricao, MAX_MSG, "bellman-ford(7): 3 passadas [%s]", rep);
-    checar_int(descricao, r->passadas, 3);
+    snprintf(descricao, MAX_MSG, "bellman-ford(7): 2 passadas (sem a de confirmacao) [%s]", rep);
+    checar_int(descricao, r->passadas, 2);
     BellmanFordResult_free(r);
     Graph_destroy(p);
 }
@@ -517,8 +526,11 @@ static void testar_ciclos_negativos(bool adj_list) {
     BellmanFordResult *r = bellman_ford(g, 0);
     snprintf(descricao, MAX_MSG, "BF(1): ciclo negativo alcancado da fonte [%s]", rep);
     checar_bool(descricao, r->negative_cycle, true);
-    snprintf(descricao, MAX_MSG, "BF(1): rodou as n-1 passadas [%s]", rep);
-    checar_int(descricao, r->passadas, g->n - 1);
+    /* o ciclo 2->3->2 aparece no grafo dos pais ja na 1a passada (3 relaxa
+       2 por -3): a deteccao antecipada (K&T 6.27) para ali, sem rodar as
+       n-1 passadas */
+    snprintf(descricao, MAX_MSG, "BF(1): ciclo detectado antes das n-1 passadas [%s]", rep);
+    checar_bool(descricao, r->passadas < g->n - 1, true);
     BellmanFordResult_free(r);
 
     /* do vertice 4 (sem arcos de saida) o ciclo nao e alcancado */
@@ -1000,9 +1012,145 @@ static void testar_equivalencia_entre_algoritmos(void) {
             BellmanFordResult_free(bt);
         }
 
+        /* Johnson (todos os pares por potencial + dijkstra): detecta o
+           mesmo ciclo negativo que o FW (os dois olham o grafo inteiro) e,
+           sem ciclo, cada fonte e a linha do FW */
+        Johnson *jo = johnson_preparar(g);
+        snprintf(descricao, MAX_MSG, "johnson: ciclo negativo = FW (%s)", ARQUIVOS_DIRECIONADOS[f]);
+        imprimir_resultado(descricao, jo->negative_cycle ? "sim" : "nao",
+                           jo->negative_cycle == fw->negative_cycle,
+                           fw->negative_cycle ? "sim" : "nao");
+        if (!jo->negative_cycle) {
+            for (int inicio = 0; inicio < g->n; inicio++) {
+                DijkstraResult *dj = johnson_fonte(jo, g, inicio);
+                snprintf(descricao, MAX_MSG, "johnson(%d) = linha %d do FW (%s)",
+                         inicio + 1, inicio + 1, ARQUIVOS_DIRECIONADOS[f]);
+                dist_para_string(dj->dist, g->n, obt);
+                dist_para_string(fw->dist[inicio], g->n, esp);
+                imprimir_resultado(descricao, obt, strcmp(obt, esp) == 0, esp);
+                DijkstraResult_free(dj);
+            }
+        }
+        Johnson_free(jo);
+
         FloydWarshallResult_free(fw);
         Graph_destroy(g);
     }
+}
+
+/* ------------------------------------------------------------------ */
+/* digrafo com 150 vertices: o Floyd-Warshall EM BLOCOS (3 blocos de 64) */
+/* ------------------------------------------------------------------ */
+
+/* custo do caminho i -> j lido da matriz de predecessores, pelas arestas do
+   grafo; NAN se a arvore nao leva de volta a i em ate n passos */
+static double custo_pelo_pred(Graph *g, FloydWarshallResult *fw, int i, int j) {
+    double soma = 0.0;
+    int v = j;
+    for (int passos = 0; v != i; passos++) {
+        int u = fw->pred[i][v];
+        if (u < 0 || passos > g->n) {
+            return NAN;
+        }
+        double peso_uv = NAN;
+        int w;
+        double peso;
+        NeighborIter it = neighbor_iter(g, u);
+        while (neighbor_next(&it, &w, &peso)) {
+            if (w == v && (isnan(peso_uv) || peso < peso_uv)) {
+                peso_uv = peso;
+            }
+        }
+        if (isnan(peso_uv)) {
+            return NAN; /* pred aponta para aresta que nao existe */
+        }
+        soma += peso_uv;
+        v = u;
+    }
+    return soma;
+}
+
+static void testar_digrafo_150(void) {
+    /* com n > 64, o FW roda em blocos (ordem diferente da classica): as
+       distancias tem que bater com o BF de cada fonte e com o Johnson, e
+       todo caminho reconstruido pelos predecessores tem que custar a
+       distancia (em empate, o FW em blocos pode escolher OUTRO caminho
+       minimo - por isso se confere o custo, nao o predecessor) */
+    char descricao[MAX_MSG];
+    Graph *g = Graph_create(DIGRAFO_150, true, true);
+    FloydWarshallResult *fw = floyd_warshall(g);
+    Johnson *jo = johnson_preparar(g);
+
+    checar_bool("digrafo 150: FW sem ciclo negativo", fw->negative_cycle, false);
+    checar_bool("digrafo 150: johnson sem ciclo negativo", jo->negative_cycle, false);
+
+    double dif_bf = 0.0, dif_jo = 0.0, dif_caminho = 0.0;
+    int alcance_diferente = 0, caminhos_invalidos = 0;
+    for (int s = 0; s < g->n; s++) {
+        BellmanFordResult *bf = bellman_ford(g, s);
+        DijkstraResult *dj = johnson_fonte(jo, g, s);
+        for (int v = 0; v < g->n; v++) {
+            double f = fw->dist[s][v];
+            bool inf_f = f == INFINITO_PESO;
+            if (inf_f != (bf->dist[v] == INFINITO_PESO) || inf_f != (dj->dist[v] == INFINITO_PESO)) {
+                alcance_diferente += 1;
+                continue;
+            }
+            if (inf_f || s == v) {
+                continue;
+            }
+            dif_bf = fmax(dif_bf, fabs(f - bf->dist[v]));
+            dif_jo = fmax(dif_jo, fabs(f - dj->dist[v]));
+            double c = custo_pelo_pred(g, fw, s, v);
+            if (isnan(c)) {
+                caminhos_invalidos += 1;
+            } else {
+                dif_caminho = fmax(dif_caminho, fabs(c - f));
+            }
+        }
+        BellmanFordResult_free(bf);
+        DijkstraResult_free(dj);
+    }
+
+    checar_int("digrafo 150: mesma alcancabilidade em FW, BF e johnson", alcance_diferente, 0);
+    snprintf(descricao, MAX_MSG, "digrafo 150: FW = BF de cada fonte (maior diferenca %.1e)", dif_bf);
+    checar_bool(descricao, dif_bf < 1e-9, true);
+    snprintf(descricao, MAX_MSG, "digrafo 150: FW = johnson (maior diferenca %.1e)", dif_jo);
+    checar_bool(descricao, dif_jo < 1e-9, true);
+    checar_int("digrafo 150: todo caminho do pred do FW existe no grafo", caminhos_invalidos, 0);
+    snprintf(descricao, MAX_MSG, "digrafo 150: custo de cada caminho do pred = distancia (%.1e)", dif_caminho);
+    checar_bool(descricao, dif_caminho < 1e-9, true);
+
+    /* o modo economico (distancias em float): mesmas distancias ate a
+       precisao do float, mesma alcancabilidade, mesmo veredito de ciclo */
+    FloydWarshallResult *fe = floyd_warshall_economico(g);
+    double dif_f = 0.0;
+    int alcance_f = 0;
+    for (int s = 0; s < g->n; s++) {
+        for (int v = 0; v < g->n; v++) {
+            double a = fw->dist[s][v], b = floyd_warshall_dist(fe, s, v);
+            if ((a == INFINITO_PESO) != (b == INFINITO_PESO)) {
+                alcance_f += 1;
+            } else if (a != INFINITO_PESO) {
+                dif_f = fmax(dif_f, fabs(a - b));
+            }
+        }
+    }
+    checar_bool("digrafo 150: FW economico sem ciclo negativo", fe->negative_cycle, false);
+    checar_int("digrafo 150: FW economico com a mesma alcancabilidade", alcance_f, 0);
+    snprintf(descricao, MAX_MSG, "digrafo 150: FW economico = FW (maior diferenca %.1e, float)", dif_f);
+    checar_bool(descricao, dif_f < 1e-3, true);
+    FloydWarshallResult_free(fe);
+
+    Graph *c = Graph_create(CICLO_NEGATIVO, true, true);
+    fe = floyd_warshall_economico(c);
+    checar_bool("FW economico: detecta o ciclo negativo", fe->negative_cycle, true);
+    FloydWarshallResult_free(fe);
+    Graph_destroy(c);
+
+    Johnson_free(jo);
+    FloydWarshallResult_free(fw);
+    Graph_destroy(g);
 }
 
 /* ------------------------------------------------------------------ */
@@ -1114,8 +1262,11 @@ int main(void) {
     printf("\n=== equivalencia entre representacoes ===\n");
     testar_equivalencia_representacoes();
 
-    printf("\n=== equivalencia entre algoritmos (BF x dijkstra x FW) ===\n");
+    printf("\n=== equivalencia entre algoritmos (BF x dijkstra x FW x johnson) ===\n");
     testar_equivalencia_entre_algoritmos();
+
+    printf("\n=== digrafo com 150 vertices: FW em blocos x BF x johnson ===\n");
+    testar_digrafo_150();
 
     printf("\n=== rotulos invalidos e digrafos recusados ===\n");
     testar_rotulos_invalidos();

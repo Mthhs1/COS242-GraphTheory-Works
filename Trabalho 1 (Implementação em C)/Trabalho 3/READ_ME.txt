@@ -12,9 +12,12 @@ especifico, como pede o enunciado, ou de uma fonte para todos) e
 FLOYD-WARSHALL (todos os pares), os dois detectando CICLO NEGATIVO.
 
 Os ESTUDOS DE CASO da Parte 3 (secao 3 do enunciado) ficam em uma pasta
-EXTERNA a esta, como combinado com o professor; os alvos correspondentes
-entram la quando os estudos forem feitos. O restante e self-contained: a
-biboteca inteira (estendida), os testes e os demos.
+EXTERNA a esta, como combinado com o professor: "../Trabalho 3 - Estudos
+de caso" (p3_estudos.c, rodar_estudos_p3.sh, gerar_tabelas_p3.py; make
+estudos roda as quatro questoes em todos os grafos de ../../Grafos/P3,
+na raiz do repositorio). O Makefile de la compila contra os fontes desta
+pasta, sem copia-los. O restante e self-contained: a
+biblioteca inteira (estendida), os testes e os demos.
 
 
 --------------------------------------------------------------------------------
@@ -84,7 +87,7 @@ Bellman-Ford e o Floyd-Warshall); so o Dijkstra e que recusa, como antes.
 --------------------------------------------------------------------------------
 Digrafos nas buscas e no Dijkstra: nenhuma linha mudou neles. A vizinhanca
 de SAIDA ja carrega a direcao, e BFS, DFS e Dijkstra seguem os arcos. O
-que mudou foi a leitura (graf_gen.c: no digrafo, cada linha "a b" escreve
+que mudou foi a leitura (graph_gen.c: no digrafo, cada linha "a b" escreve
 UM no na lista de a / UMA celula [a][b] na matriz, em vez dos dois) e o
 iterador (documentado: vizinhanca de saida).
 
@@ -92,7 +95,7 @@ Operacoes da Parte 1 que sao para grafos NAO direcionados (componentes
 conexas, distancia em arestas, diametro, estatisticas, arquivo de saida)
 recusam digrafos com mensagem de erro - num digrafo o iterador so ve
 vizinhos de saida e elas devolveriam numeros sem sentido (o certo seria
-componentes FORTMENTE conexas, que nao fazem parte do trabalho).
+componentes FORTEMENTE conexas, que nao fazem parte do trabalho).
 
     Graph *Graph_reverse(Graph *g);
         O GRAFO TRANSPOSTO (todas as arestas invertidas), na mesma
@@ -120,13 +123,24 @@ componentes FORTMENTE conexas, que nao fazem parte do trabalho).
            arestas, para todos os k - O(n^2)), um so vetor M[v] com as
            estimativas correntes, atualizado no lugar - O(n), como o
            Dijkstra. Cada relaxamento ja le o valor mais novo.
-        2. TERMINACAO PRECOCE: passada que nao relaxa nenhuma aresta
-           encerra o algoritmo - as estimativas nao vao mudar mais. (Se
+        2. TEMPO - SO OS VERTICES ATIVOS: M[v] so pode melhorar se algum
+           predecessor u melhorou desde a ultima vez que as arestas de u
+           foram relaxadas. Cada passada relaxa so as arestas de saida dos
+           vertices ATIVOS (os que mudaram), em ordem crescente e no lugar;
+           pular os inativos nao muda nenhum valor, so o trabalho. Sem
+           ativos, o algoritmo para (a TERMINACAO PRECOCE, sem precisar de
+           uma passada extra so para confirmar que nada muda). (Se
            houvesse ciclo negativo alcancavel, sempre daria para melhorar
            girando o ciclo: parar cedo nunca esconde ciclo negativo.) O
            campo `passadas` do resultado mostra o ganho (<= n-1).
 
-        Ciclo negativo: uma passada a mais, so para detectar. O BF flaga
+        Ciclo negativo, deteccao ANTECIPADA (Kleinberg-Tardos, 6.27): ao
+        fim de cada passada confere-se, em O(n), se o grafo dos ponteiros
+        de pai (v -> parents[v]) tem um ciclo - se tem, ele e negativo, e o
+        algoritmo para ali. No grafo_W_1 da Parte 3 (25 mil vertices, com
+        um ciclo de custo -2,22) a deteccao caiu de 63,5 s (25 mil passadas)
+        para 11 ms (2 passadas). Se o ciclo nao aparecer antes, vale a
+        regra classica: uma passada a mais, so para detectar. O BF flaga
         os ciclos que a FONTE alcanca (no _to, os que CHEGAM ao alvo) -
         ciclo fora do alcance nao participa de nenhum caminho do
         problema. Com negative_cycle == true, dist/parents nao sao
@@ -156,6 +170,28 @@ componentes FORTMENTE conexas, que nao fazem parte do trabalho).
         pred[i][j], que reconstrui os caminhos, tambem e uma unica
         matriz n^2.
 
+        Otimizacoes de tempo (mesmas distancias): a matriz e um bloco
+        CONTIGUO (dist[i] continua sendo a linha i); o laco interno nao
+        testa infinito (INFINITO_PESO e o +inf do IEEE e inf + x = inf),
+        o que deixa o compilador vetoriza-lo; e o triplo laco roda EM
+        BLOCOS de 64 x 64 (as tres fases: diagonal, linha/coluna, resto),
+        que cabem no cache - o FW classico relê a matriz inteira a cada k.
+        Medido na bancada de ../Trabalho 3 - Estudos de caso/otimizacoes
+        (digrafo aleatorio, n = 3000): 22,0 s -> 5,0 s. Em
+        empate de custo, a ordem em blocos pode escolher OUTRO caminho
+        minimo (outro pred, mesmo custo); com n <= 64 a ordem e a classica.
+        PARADA ANTECIPADA: ao fim de cada faixa de 64 valores de k, se
+        algum dist[i][i] < 0, o ciclo negativo esta provado e o FW para.
+
+    FloydWarshallResult *floyd_warshall_economico(Graph *g);
+    double floyd_warshall_dist(FloydWarshallResult *r, int i, int j);
+        O MESMO algoritmo com as distancias em float: 8 n^2 bytes em vez
+        de 12 n^2 (n = 25000: 5 GB em vez de 7,5 GB, o que cabe nos 7,7
+        GB da nossa maquina), com ~7 algarismos significativos. O nucleo
+        (Algorithms/floyd_warshall_nucleo.h) e escrito uma vez e
+        instanciado para double e para float, como um template.
+        floyd_warshall_dist le a distancia nos dois modos.
+
         A arvore A PARTIR DE CADA vertice: pred[i][j] = predecessor de j
         no caminho minimo i->j; a LINHA i de pred e o vetor de pais da
         arvore enraizada em i. Ciclo negativo: dist[i][i] < 0 para algum
@@ -168,6 +204,19 @@ componentes FORTMENTE conexas, que nao fazem parte do trabalho).
         NULL e 0 se nao ha caminho (ou se a arvore esta corrompida por
         ciclo negativo: os helpers limitam a caminhada a n passos).
 
+    Johnson *johnson_preparar(Graph *g);
+    DijkstraResult *johnson_fonte(Johnson *j, Graph *g, int fonte);
+        OTIMIZACAO (alem do pedido): todos os pares com pesos negativos
+        pelo algoritmo de JOHNSON, O(nm log n) - contra O(n^3) do
+        Floyd-Warshall e O(n^2 m) de n Bellman-Fords. johnson_preparar roda
+        UM Bellman-Ford a partir de um vertice virtual ligado a todos por
+        peso 0 (bellman_ford_potencial: todos comecam em 0 e ativos) e
+        guarda o potencial h; ele tambem detecta ciclo negativo em
+        QUALQUER parte do grafo. johnson_fonte roda o MESMO Dijkstra com
+        heap da Parte 2 sobre os pesos reduzidos peso + h(u) - h(v) >= 0
+        (dijkstra_reduzido: o laco le o potencial ao ler cada aresta; o
+        grafo nao e copiado) e devolve d(s,v) = d'(s,v) - h(s) + h(v).
+
 Testes: ./bin/test_parte3 - leitura de digrafos nas duas representacoes
 (arco duplicado vale a ultima, "a b" e "b a" sao arcos diferentes, laco
 ignorado, MESMO arquivo lido dos dois jeitos), BFS/DFS/Dijkstra em digrafo
@@ -178,8 +227,12 @@ Floyd-Warshall), Floyd-Warshall completo com arvores e caminhos, o
 transposto (e o transposto do transposto), e a REGRESSAO: os grafos das
 Partes 1 e 2, lidos como nao direcionados, continuam com os valores
 conhecidos. Os testes ainda cruzam os algoritmos entre si (BF = Dijkstra
-sem pesos negativos; BF = linha do FW; BF-to = coluna do FW) e as duas
-representacoes entre si, em todos os grafos de exemplo. Os 176 testes da
+sem pesos negativos; BF = linha do FW; BF-to = coluna do FW; Johnson =
+linha do FW e mesmo veredito de ciclo negativo) e as duas representacoes
+entre si, em todos os grafos de exemplo. graph_teste_digrafo_150.txt (150
+vertices, pesos negativos sem ciclo) passa do tamanho de um bloco do FW:
+ali se confere FW em blocos = BF de cada fonte = Johnson, e que todo
+caminho reconstruido pelo pred custa a distancia. Os 176 testes da
 Parte 1 e os da Parte 2 continuam passando nas pastas deles.
 
 Grafos de exemplo desta pasta:

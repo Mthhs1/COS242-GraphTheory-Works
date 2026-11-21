@@ -1,0 +1,17 @@
+grafo: grafo_W_2
+n 25000 m 824964 pesos_negativos nao leitura 0.172 s
+
+== Q1: Bellman-Ford, distancia de 10, 20 e 30 para o vertice 100 ==
+ciclo negativo que chega ao 100: nao | passadas: 16
+q1 10 10.47 | 11 arestas | caminho: 10 -> 22754 -> 23713 -> 20821 -> 23161 -> 3591 -> 7214 -> 4808 -> 7704 -> 10831 -> 14144 -> 100
+q1 20 8.48 | 6 arestas | caminho: 20 -> 6795 -> 7737 -> 11988 -> 7094 -> 14144 -> 100
+q1 30 8.71 | 11 arestas | caminho: 30 -> 23783 -> 439 -> 502 -> 7344 -> 7842 -> 10419 -> 12598 -> 13685 -> 17695 -> 14144 -> 100
+
+== Q3: tempo medio de cada algoritmo (10 rodadas, s) ==
+tempo bellman_ford_to 0.029970 min 0.027664 max 0.033165
+tempo floyd_warshall inviavel
+
+== Q4: todos os pares (1 rodadas, s) ==
+tempo todos_pares_bellman_ford 319.993324
+tempo todos_pares_johnson 333.307938
+conferencia: 25000 fontes, 625000000 pares alcancaveis, maior diferenca 0, alcancabilidade divergente em 0 pares (BF x Johnson; FW inviavel)

@@ -36,7 +36,11 @@ raiz i, como no Dijkstra.)
 typedef struct FloydWarshallResult {
     int n;                /* ordem das matrizes */
     double **dist;        /* n x n; dist[i][j] = INFINITO_PESO se j nao e
-                             alcancavel a partir de i; dist[i][i] = 0 */
+                             alcancavel a partir de i; dist[i][i] = 0.
+                             NULL no modo economico (ver dist32) */
+    float **dist32;       /* so no modo economico: as distancias em float
+                             (metade da memoria); NULL no modo padrao. Leia
+                             qualquer um dos dois com floyd_warshall_dist */
     int **pred;           /* n x n; pred[i][j] = predecessor de j no caminho
                              i -> j; -1 = sem aresta/no caminho */
     bool negative_cycle;  /* true se dist[i][i] < 0 para algum i */
@@ -47,6 +51,15 @@ void FloydWarshallResult_free(FloydWarshallResult *result);
 /* Distancias e arvores entre todos os pares. O(n^2) de memoria (a
    otimizacao), O(n^3) de tempo. */
 FloydWarshallResult *floyd_warshall(Graph *g);
+
+/* O MESMO algoritmo com as distancias em float: 8 n^2 bytes em vez de
+   12 n^2 (n = 25000: 5 GB em vez de 7,5 GB), com ~7 algarismos
+   significativos. Para quando a versao exata nao cabe na memoria. */
+FloydWarshallResult *floyd_warshall_economico(Graph *g);
+
+/* dist[origem][destino] (indices 0-based), nos dois modos; INFINITO_PESO
+   se nao ha caminho */
+double floyd_warshall_dist(FloydWarshallResult *result, int origem, int destino);
 
 /* Caminho minimo origem -> destino (indices 0-based), em ordem origem ->
    destino, com o comprimento em *comprimento_out. NULL (e 0) se o destino

@@ -27,12 +27,14 @@ As duas otimizacoes discutidas em aula:
      atualizado no lugar: cada relaxamento ja le o valor mais novo, o que
      so antecipa melhoras. O(n) de memoria, como o Dijkstra.
 
-  2. TERMINACAO PRECOCE: se uma passada inteira nao relaxa nenhuma aresta,
-     as estimativas nao vao mudar nas proximas - sao as distancias
-     minimas e o algoritmo para antes das n-1 passadas. (Se existisse um
-     ciclo negativo alcancavel, nenhuma passada seria a ultima: sempre
-     daria para melhorar girando o ciclo. Entao parar cedo nunca "esconde"
-     ciclo negativo.)
+  2. TEMPO - SO OS VERTICES ATIVOS: M[v] so pode melhorar se algum
+     predecessor melhorou na passada anterior. Cada passada relaxa so as
+     arestas de saida dos vertices que mudaram na passada anterior (os
+     ativos), em vez das m arestas. Quando nenhum vertice muda, a lista
+     de ativos fica vazia e o algoritmo para antes das n-1 passadas (a
+     TERMINACAO PRECOCE). (Se existisse um ciclo negativo alcancavel,
+     nenhuma passada seria a ultima: sempre daria para melhorar girando o
+     ciclo. Entao parar cedo nunca "esconde" ciclo negativo.)
 
 CICLO NEGATIVO: apos as passadas, mais uma passada de deteccao - se ela
 consegue relaxar alguma aresta, existe um caminho melhor com mais de n-1
@@ -71,6 +73,12 @@ BellmanFordResult *bellman_ford(Graph *g, int fonte);
 
 /* Todos os vertices -> alvo (indice 0-based), sobre o grafo transposto. */
 BellmanFordResult *bellman_ford_to(Graph *g, int alvo);
+
+/* O potencial do algoritmo de Johnson: h(v) = distancia de um vertice
+   virtual ligado a todos por arestas de peso 0 (todos comecam em 0 e
+   ativos). negative_cycle diz se ha ciclo negativo EM QUALQUER PARTE do
+   grafo. parents nao tem significado de arvore aqui. */
+BellmanFordResult *bellman_ford_potencial(Graph *g);
 
 /* Caminho minimo fonte -> alvo do resultado de bellman_ford (0-based), em
    ordem fonte -> alvo, com o comprimento em *comprimento_out. NULL (e 0)

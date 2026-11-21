@@ -4,7 +4,7 @@ CFLAGS = -std=c11 -Wall -Wextra -O2 -I. -IDataStructures -IAlgorithms
 # Parte 3 do trabalho: a MESMA biblioteca da Parte 2 (agora com DIGRAFOS:
 # o parametro `direcionado` na leitura e o grafo transposto) e, em cima
 # dela, o que a Parte 3 acrescentou: o Bellman-Ford com as duas
-# otimizacoes de aula (vetor unico de estimativas + terminacao precoce)
+# otimizacoes de aula (vetor unico de estimativas + so os vertices ativos)
 # e o Floyd-Warshall com a otimizacao de memoria (uma matriz so, in
 # place) - Algorithms/bellman_ford.c e Algorithms/floyd_warshall.c - os
 # testes da Parte 3 (test_parte3.c) e os demos novos.
@@ -19,7 +19,7 @@ DS  = DataStructures/node.c DataStructures/my_queue.c DataStructures/my_stack.c 
       DataStructures/heap.c
 ALG = Algorithms/BFS.c Algorithms/DFS.c Algorithms/components.c \
       Algorithms/distance.c Algorithms/graph_stats.c Algorithms/dijkstra.c \
-      Algorithms/bellman_ford.c Algorithms/floyd_warshall.c
+      Algorithms/bellman_ford.c Algorithms/floyd_warshall.c Algorithms/johnson.c
 LIB = $(DS) $(ALG) graph_gen.c graph_utils.c graph.c
 
 # executaveis ficam em bin/, para nao misturar com o codigo
