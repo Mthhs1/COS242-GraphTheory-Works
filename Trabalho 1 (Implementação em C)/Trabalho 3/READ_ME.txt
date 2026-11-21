@@ -134,7 +134,13 @@ componentes FORTMENTE conexas, que nao fazem parte do trabalho).
            girando o ciclo: parar cedo nunca esconde ciclo negativo.) O
            campo `passadas` do resultado mostra o ganho (<= n-1).
 
-        Ciclo negativo: uma passada a mais, so para detectar. O BF flaga
+        Ciclo negativo, deteccao ANTECIPADA (Kleinberg-Tardos, 6.27): ao
+        fim de cada passada confere-se, em O(n), se o grafo dos ponteiros
+        de pai (v -> parents[v]) tem um ciclo - se tem, ele e negativo, e o
+        algoritmo para ali. No grafo_W_1 da Parte 3 (25 mil vertices, com
+        um ciclo de custo -2,22) a deteccao caiu de 63 s (25 mil passadas)
+        para 9 ms (2 passadas). Se o ciclo nao aparecer antes, vale a
+        regra classica: uma passada a mais, so para detectar. O BF flaga
         os ciclos que a FONTE alcanca (no _to, os que CHEGAM ao alvo) -
         ciclo fora do alcance nao participa de nenhum caminho do
         problema. Com negative_cycle == true, dist/parents nao sao
@@ -173,6 +179,17 @@ componentes FORTMENTE conexas, que nao fazem parte do trabalho).
         Medido em digrafo sintetico com n = 3000: 21,7 s -> 5,8 s. Em
         empate de custo, a ordem em blocos pode escolher OUTRO caminho
         minimo (outro pred, mesmo custo); com n <= 64 a ordem e a classica.
+        PARADA ANTECIPADA: ao fim de cada faixa de 64 valores de k, se
+        algum dist[i][i] < 0, o ciclo negativo esta provado e o FW para.
+
+    FloydWarshallResult *floyd_warshall_economico(Graph *g);
+    double floyd_warshall_dist(FloydWarshallResult *r, int i, int j);
+        O MESMO algoritmo com as distancias em float: 8 n^2 bytes em vez
+        de 12 n^2 (n = 25000: 5 GB em vez de 7,5 GB, o que cabe nos 7,7
+        GB da nossa maquina), com ~7 algarismos significativos. O nucleo
+        (Algorithms/floyd_warshall_nucleo.h) e escrito uma vez e
+        instanciado para double e para float, como um template.
+        floyd_warshall_dist le a distancia nos dois modos.
 
         A arvore A PARTIR DE CADA vertice: pred[i][j] = predecessor de j
         no caminho minimo i->j; a LINHA i de pred e o vetor de pais da

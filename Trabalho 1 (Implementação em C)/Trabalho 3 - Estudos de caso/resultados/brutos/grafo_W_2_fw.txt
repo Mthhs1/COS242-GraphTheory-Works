@@ -1,0 +1,37 @@
+grafo: grafo_W_2
+n 25000 m 824964 pesos_negativos nao leitura 0.132 s
+
+== Q2: Floyd-Warshall, distancias entre {10, 20, 30, 40, 50} ==
+modo: economico (float, 8 n^2 bytes)
+tempo deste floyd_warshall 1612.750 s
+ciclo negativo no grafo: nao
+q2 10 10 0
+q2 10 20 11.7300005
+q2 10 30 8.13999939
+q2 10 40 9.489999771
+q2 10 50 7.079999924
+q2 20 10 3.839999914
+q2 20 20 0
+q2 20 30 7.029999733
+q2 20 40 8.300000191
+q2 20 50 4.699999809
+q2 30 10 5.789999962
+q2 30 20 12.55000019
+q2 30 30 0
+q2 30 40 8.300000191
+q2 30 50 6.329999924
+q2 40 10 5.050000191
+q2 40 20 12.3200016
+q2 40 30 5.360000134
+q2 40 40 0
+q2 40 50 5.710000038
+q2 50 10 4.480000019
+q2 50 20 12.2300005
+q2 50 30 7.789999962
+q2 50 40 8.260000229
+q2 50 50 0
+conferencia FW x BF (linhas de 10..50 inteiras): maior diferenca 1.6e-06, alcancabilidade divergente em 0 pares
+
+== Q3: tempo medio de cada algoritmo (1 rodadas, s) ==
+tempo bellman_ford_to 0.035884 min 0.035884 max 0.035884
+tempo floyd_warshall 1612.750129 min 1612.750129 max 1612.750129 rodadas 1 modo economico

@@ -27,6 +27,35 @@ pior caso continua O(nm); em grafos reais a frente de ativos e pequena.
 As arestas saem pelo iterador de vizinhanca - o mesmo do Dijkstra - entao o
 algoritmo serve para as duas representacoes, direcionado ou nao.
 */
+/*
+O grafo dos pais (cada v aponta para parents[v]) tem um ciclo? Cada vertice
+tem no maximo um pai, entao se sobe de cada vertice ainda nao visto marcando
+o caminho com o numero da subida: chegar a um vertice marcado NESTA subida e
+fechar um ciclo; chegar a -1 ou a um vertice de subida anterior, nao. Cada
+vertice e marcado uma vez: O(n). `visita` (n inteiros) e reaproveitado entre
+chamadas e zerado no fim.
+*/
+static bool ciclo_nos_pais(const int *parents, int n, int *visita) {
+    bool achou = false;
+    int subida = 0;
+    for (int v = 0; v < n && !achou; v++) {
+        if (visita[v] != 0 || parents[v] < 0) {
+            continue;
+        }
+        subida += 1;
+        int u = v;
+        while (u >= 0 && visita[u] == 0) {
+            visita[u] = subida;
+            u = parents[u];
+        }
+        achou = (u >= 0 && visita[u] == subida);
+    }
+    for (int v = 0; v < n; v++) {
+        visita[v] = 0;
+    }
+    return achou;
+}
+
 static int bellman_ford_nucleo(Graph *g, double *dist, int *parents, bool *ativo,
                                int n_ativos, bool *ciclo_out) {
     int n = g->n;
@@ -34,6 +63,7 @@ static int bellman_ford_nucleo(Graph *g, double *dist, int *parents, bool *ativo
 
     /* n-1 passadas bastam: um caminho minimo (sem ciclo negativo no meio)
        tem no maximo n-1 arestas */
+    int *visita = xcalloc((size_t)(n > 0 ? n : 1), sizeof(int));
     for (int i = 1; i <= n - 1 && n_ativos > 0; i++) {
         passadas = i;
 
@@ -59,7 +89,19 @@ static int bellman_ford_nucleo(Graph *g, double *dist, int *parents, bool *ativo
                 }
             }
         }
+
+        /* Deteccao ANTECIPADA de ciclo negativo (Kleinberg-Tardos, 6.27):
+           se o grafo dos ponteiros de pai (v -> parents[v]) tem um ciclo, o
+           ciclo e negativo. Conferir isso custa O(n) por passada - o mesmo
+           da varredura dos ativos - e, num grafo com ciclo negativo,
+           encerra o algoritmo em poucas passadas em vez de n-1. */
+        if (n_ativos > 0 && ciclo_nos_pais(parents, n, visita)) {
+            *ciclo_out = true;
+            free(visita);
+            return passadas;
+        }
     }
+    free(visita);
 
     /* Deteccao de ciclo negativo: depois de n-1 passadas, se ainda ha
        ativos, uma passada a mais so para flagar (com ciclo os valores nao

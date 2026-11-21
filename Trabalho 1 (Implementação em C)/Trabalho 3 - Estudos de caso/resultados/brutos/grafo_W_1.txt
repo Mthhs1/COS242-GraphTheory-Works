@@ -1,0 +1,17 @@
+grafo: grafo_W_1
+n 25000 m 549953 pesos_negativos sim leitura 0.129 s
+
+== Q1: Bellman-Ford, distancia de 10, 20 e 30 para o vertice 100 ==
+ciclo negativo que chega ao 100: SIM (distancias nao confiaveis) | passadas: 2
+q1 10 inf | 0 arestas | caminho:
+q1 20 3.59 | 0 arestas | caminho:
+q1 30 inf | 0 arestas | caminho:
+
+== Q3: tempo medio de cada algoritmo (10 rodadas, s) ==
+tempo bellman_ford_to 0.010910 min 0.008212 max 0.015342
+tempo floyd_warshall inviavel
+
+== Q4: todos os pares (10 rodadas, s) ==
+tempo todos_pares_bellman_ford 27.227737
+tempo todos_pares_johnson 0.002371 (parou no ciclo negativo)
+conferencia: ciclo negativo no grafo (johnson) - distancias nao definidas

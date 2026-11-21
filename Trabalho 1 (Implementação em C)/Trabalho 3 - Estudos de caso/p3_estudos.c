@@ -22,7 +22,10 @@ uso: ./bin/p3_estudos <grafo.txt> [rodadas=10] [questoes=1234]
 
 Variaveis de ambiente (para grafos grandes demais):
      FW_MAX_N=n          nao roda o Floyd-Warshall se n > FW_MAX_N
-                         (padrao: o que cabe em 80% da memoria livre)
+                         (padrao: o exato se 12 n^2 bytes cabem em 80% da
+                         memoria livre; senao o economico, se 8 n^2 cabem)
+     FW_RODADAS=r        rodadas do FW na Q3 (padrao: as mesmas R; a do FW
+                         da Q2 conta como a primeira)
      TODOS_PARES_RODADAS=r  rodadas da Q4 (padrao: as mesmas R)
      TODOS_PARES_AMOSTRA=k  na Q4, se > 0, cronometra so k fontes e
                          extrapola para n (marcado como ESTIMADO na saida)
@@ -121,25 +124,49 @@ static void questao1(Graph *g) {
     BellmanFordResult_free(r);
 }
 
-static bool fw_cabe(Graph *g) {
-    /* dist (double) + pred (int): 12 n^2 bytes */
-    double precisa = 12.0 * (double)g->n * (double)g->n;
+/* Qual Floyd-Warshall cabe na memoria livre: 1 = exato (double + int,
+   12 n^2 bytes), 2 = economico (float + int, 8 n^2), 0 = nenhum. */
+#define FW_NENHUM 0
+#define FW_EXATO 1
+#define FW_ECONOMICO 2
+static int fw_modo(Graph *g) {
+    double n2 = (double)g->n * (double)g->n;
     long max_n = env_long("FW_MAX_N", 0);
-    if (max_n > 0) {
-        return g->n <= max_n;
+    if (max_n > 0 && g->n > max_n) {
+        return FW_NENHUM;
     }
     double livre = memoria_livre();
-    return livre <= 0.0 || precisa <= 0.8 * livre;
+    if (livre <= 0.0 || 12.0 * n2 <= 0.8 * livre) {
+        return FW_EXATO;
+    }
+    if (8.0 * n2 <= 0.8 * livre) {
+        return FW_ECONOMICO;
+    }
+    return FW_NENHUM;
 }
+
+static FloydWarshallResult *fw_rodar(Graph *g, int modo) {
+    return modo == FW_ECONOMICO ? floyd_warshall_economico(g) : floyd_warshall(g);
+}
+
+/* o tempo do FW da Q2 vale como 1a rodada da Q3 (com n = 25000 cada FW leva
+   dezenas de minutos: nao se repete a conta so para medir) */
+static double fw_tempo_q2 = -1.0;
 
 static void questao2(Graph *g) {
     printf("\n== Q2: Floyd-Warshall, distancias entre {10, 20, 30, 40, 50} ==\n");
-    if (!fw_cabe(g)) {
-        printf("floyd-warshall inviavel: precisaria de %.1f GB (12 n^2 bytes)\n",
-               12.0 * (double)g->n * (double)g->n / 1073741824.0);
+    int modo = fw_modo(g);
+    if (modo == FW_NENHUM) {
+        printf("floyd-warshall inviavel: precisaria de %.1f GB (8 n^2 bytes no modo economico)\n",
+               8.0 * (double)g->n * (double)g->n / 1073741824.0);
         return;
     }
-    FloydWarshallResult *r = floyd_warshall(g);
+    printf("modo: %s\n", modo == FW_EXATO ? "exato (double, 12 n^2 bytes)"
+                                          : "economico (float, 8 n^2 bytes)");
+    double t0 = agora_s();
+    FloydWarshallResult *r = fw_rodar(g, modo);
+    fw_tempo_q2 = agora_s() - t0;
+    printf("tempo deste floyd_warshall %.3f s\n", fw_tempo_q2);
     printf("ciclo negativo no grafo: %s\n", r->negative_cycle ? "SIM (distancias nao confiaveis)" : "nao");
     for (int a = 0; a < N_Q2; a++) {
         for (int b = 0; b < N_Q2; b++) {
@@ -148,9 +175,34 @@ static void questao2(Graph *g) {
                 continue;
             }
             printf("q2 %d %d ", i, j);
-            imprimir_dist(r->dist[i - 1][j - 1]);
+            imprimir_dist(floyd_warshall_dist(r, i - 1, j - 1));
             printf("\n");
         }
+    }
+
+    /* conferencia, fora do cronometro: as linhas do FW das fontes da Q2 contra
+       o Bellman-Ford de cada uma (o FW nao e recalculado em outro lugar) */
+    if (!r->negative_cycle) {
+        double maior = 0.0;
+        long divergentes = 0;
+        for (int a = 0; a < N_Q2; a++) {
+            int s = Q2_VERTICES[a] - 1;
+            if (s >= g->n) {
+                continue;
+            }
+            BellmanFordResult *bf = bellman_ford(g, s);
+            for (int v = 0; v < g->n; v++) {
+                double x = floyd_warshall_dist(r, s, v), y = bf->dist[v];
+                if ((x == INFINITO_PESO) != (y == INFINITO_PESO)) {
+                    divergentes += 1;
+                } else if (x != INFINITO_PESO) {
+                    maior = fmax(maior, fabs(x - y));
+                }
+            }
+            BellmanFordResult_free(bf);
+        }
+        printf("conferencia FW x BF (linhas de 10..50 inteiras): maior diferenca %.3g, "
+               "alcancabilidade divergente em %ld pares\n", maior, divergentes);
     }
     FloydWarshallResult_free(r);
 }
@@ -172,18 +224,26 @@ static void questao3(Graph *g, int rodadas) {
         }
         printf("tempo bellman_ford_to %.6f min %.6f max %.6f\n", total / rodadas, minimo, maximo);
     }
-    if (fw_cabe(g)) {
+    int modo = fw_modo(g);
+    if (modo != FW_NENHUM) {
+        int r_fw = (int)env_long("FW_RODADAS", rodadas);
         double total = 0.0, minimo = 1e300, maximo = 0.0;
-        for (int k = 0; k < rodadas; k++) {
+        int feitas = 0;
+        if (fw_tempo_q2 >= 0.0) { /* a rodada da Q2 conta */
+            total = minimo = maximo = fw_tempo_q2;
+            feitas = 1;
+        }
+        for (; feitas < r_fw; feitas++) {
             double t0 = agora_s();
-            FloydWarshallResult *r = floyd_warshall(g);
+            FloydWarshallResult *r = fw_rodar(g, modo);
             double dt = agora_s() - t0;
             FloydWarshallResult_free(r);
             total += dt;
             minimo = dt < minimo ? dt : minimo;
             maximo = dt > maximo ? dt : maximo;
         }
-        printf("tempo floyd_warshall %.6f min %.6f max %.6f\n", total / rodadas, minimo, maximo);
+        printf("tempo floyd_warshall %.6f min %.6f max %.6f rodadas %d modo %s\n", total / feitas,
+               minimo, maximo, feitas, modo == FW_EXATO ? "exato" : "economico");
     } else {
         printf("tempo floyd_warshall inviavel\n");
     }
@@ -227,10 +287,11 @@ static double todos_pares_johnson(Graph *g, int amostra, bool *ciclo) {
 }
 
 /* fora do cronometro: as tres formas de todos os pares dao as mesmas
-   distancias? (compara com o FW quando ele cabe; senao, BF x Johnson) */
+   distancias? Com o FW so em grafo pequeno (n <= 5000, exato): nos grandes
+   ele ja foi conferido contra o BF na Q2 e recalcula-lo custaria horas. */
 static void conferir_todos_pares(Graph *g, int amostra) {
     int fontes = (amostra > 0 && amostra < g->n) ? amostra : g->n;
-    FloydWarshallResult *fw = fw_cabe(g) ? floyd_warshall(g) : NULL;
+    FloydWarshallResult *fw = (g->n <= 5000 && fw_modo(g) == FW_EXATO) ? floyd_warshall(g) : NULL;
     Johnson *j = johnson_preparar(g);
     if (j->negative_cycle) {
         printf("conferencia: ciclo negativo no grafo (johnson%s) - distancias nao definidas\n",
@@ -247,7 +308,7 @@ static void conferir_todos_pares(Graph *g, int amostra) {
         DijkstraResult *jo = johnson_fonte(j, g, s);
         for (int v = 0; v < g->n; v++) {
             double a = bf->dist[v], b = jo->dist[v];
-            double c = fw != NULL ? fw->dist[s][v] : a;
+            double c = fw != NULL ? floyd_warshall_dist(fw, s, v) : a;
             bool ia = a == INFINITO_PESO, ib = b == INFINITO_PESO, ic = c == INFINITO_PESO;
             if (ia != ib || ia != ic) {
                 inf_diferentes += 1;

@@ -526,8 +526,11 @@ static void testar_ciclos_negativos(bool adj_list) {
     BellmanFordResult *r = bellman_ford(g, 0);
     snprintf(descricao, MAX_MSG, "BF(1): ciclo negativo alcancado da fonte [%s]", rep);
     checar_bool(descricao, r->negative_cycle, true);
-    snprintf(descricao, MAX_MSG, "BF(1): rodou as n-1 passadas [%s]", rep);
-    checar_int(descricao, r->passadas, g->n - 1);
+    /* o ciclo 2->3->2 aparece no grafo dos pais ja na 1a passada (3 relaxa
+       2 por -3): a deteccao antecipada (K&T 6.27) para ali, sem rodar as
+       n-1 passadas */
+    snprintf(descricao, MAX_MSG, "BF(1): ciclo detectado antes das n-1 passadas [%s]", rep);
+    checar_bool(descricao, r->passadas < g->n - 1, true);
     BellmanFordResult_free(r);
 
     /* do vertice 4 (sem arcos de saida) o ciclo nao e alcancado */
@@ -1117,6 +1120,33 @@ static void testar_digrafo_150(void) {
     checar_int("digrafo 150: todo caminho do pred do FW existe no grafo", caminhos_invalidos, 0);
     snprintf(descricao, MAX_MSG, "digrafo 150: custo de cada caminho do pred = distancia (%.1e)", dif_caminho);
     checar_bool(descricao, dif_caminho < 1e-9, true);
+
+    /* o modo economico (distancias em float): mesmas distancias ate a
+       precisao do float, mesma alcancabilidade, mesmo veredito de ciclo */
+    FloydWarshallResult *fe = floyd_warshall_economico(g);
+    double dif_f = 0.0;
+    int alcance_f = 0;
+    for (int s = 0; s < g->n; s++) {
+        for (int v = 0; v < g->n; v++) {
+            double a = fw->dist[s][v], b = floyd_warshall_dist(fe, s, v);
+            if ((a == INFINITO_PESO) != (b == INFINITO_PESO)) {
+                alcance_f += 1;
+            } else if (a != INFINITO_PESO) {
+                dif_f = fmax(dif_f, fabs(a - b));
+            }
+        }
+    }
+    checar_bool("digrafo 150: FW economico sem ciclo negativo", fe->negative_cycle, false);
+    checar_int("digrafo 150: FW economico com a mesma alcancabilidade", alcance_f, 0);
+    snprintf(descricao, MAX_MSG, "digrafo 150: FW economico = FW (maior diferenca %.1e, float)", dif_f);
+    checar_bool(descricao, dif_f < 1e-3, true);
+    FloydWarshallResult_free(fe);
+
+    Graph *c = Graph_create(CICLO_NEGATIVO, true, true);
+    fe = floyd_warshall_economico(c);
+    checar_bool("FW economico: detecta o ciclo negativo", fe->negative_cycle, true);
+    FloydWarshallResult_free(fe);
+    Graph_destroy(c);
 
     Johnson_free(jo);
     FloydWarshallResult_free(fw);

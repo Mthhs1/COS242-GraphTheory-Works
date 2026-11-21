@@ -34,6 +34,11 @@ def tempo(segundos):
 
 def ler(arquivo):
     t = arquivo.read_text(encoding="utf-8")
+    # o Floyd-Warshall dos grafos grandes roda a parte (<grafo>_fw.txt): as
+    # linhas dele substituem as do arquivo principal
+    fw = arquivo.with_name(arquivo.stem + "_fw.txt")
+    if fw.exists():
+        t = re.sub(r"^tempo floyd_warshall inviavel\n", "", t, flags=re.M) + "\n" + fw.read_text(encoding="utf-8")
     r = {"nome": arquivo.stem, "texto": t}
     m = re.search(r"^n (\d+) m (\d+) pesos_negativos (\S+)", t, re.M)
     if m:
@@ -64,7 +69,7 @@ def tabela(titulo, cabecalho, linhas, nota=None):
     return "\n".join(out) + "\n"
 
 
-grafos = sorted((ler(a) for a in BRUTOS.glob("*.txt")),
+grafos = sorted((ler(a) for a in BRUTOS.glob("*.txt") if not a.stem.endswith("_fw")),
                 key=lambda r: [int(x) if x.isdigit() else x for x in re.split(r"(\d+)", r["nome"])])
 
 secoes = ["# Estudos de caso da Parte 3 — resultados", ""]
