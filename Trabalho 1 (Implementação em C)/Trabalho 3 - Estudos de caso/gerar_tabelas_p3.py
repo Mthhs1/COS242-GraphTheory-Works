@@ -47,7 +47,8 @@ def ler(arquivo):
     r["q1_ciclo"] = "SIM" in (re.search(r"ciclo negativo que chega.*", t) or [""])[0]
     r["q2"] = {(i, j): d for i, j, d in re.findall(r"^q2 (\d+) (\d+) (\S+)", t, re.M)}
     r["q2_ciclo"] = bool(re.search(r"ciclo negativo no grafo: SIM", t))
-    r["fw_inviavel"] = "floyd-warshall inviavel" in t
+    # o C imprime "tempo floyd_warshall inviavel" (questao 3) e, em versoes antigas, "floyd-warshall inviavel: ..."
+    r["fw_inviavel"] = bool(re.search(r"floyd-warshall inviavel|^tempo floyd_warshall inviavel", t, re.M))
     for chave, padrao in (("t_bf", r"tempo bellman_ford_to ([\d.]+)"),
                           ("t_fw", r"tempo floyd_warshall ([\d.]+)"),
                           ("t_tp_bf", r"tempo todos_pares_bellman_ford ([\d.]+)"),
@@ -57,6 +58,10 @@ def ler(arquivo):
     r["estimado"] = "ESTIMADO" in t
     m = re.search(r"^conferencia: (.*)$", t, re.M)
     r["conferencia"] = m.group(1) if m else TRACO
+    # o FW rodado a parte (<grafo>_fw.txt) tem a sua propria conferencia contra o BF: ela substitui o "FW inviavel"
+    mf = re.search(r"^conferencia FW x BF \(([^)]*)\): (.*)$", t, re.M)
+    if mf and r["conferencia"].endswith("; FW inviavel)"):
+        r["conferencia"] = r["conferencia"][:-len("; FW inviavel)")] + f"; FW x BF nas {mf.group(1)}: {mf.group(2)})"
     return r
 
 
@@ -91,7 +96,7 @@ secoes.append(tabela("Questão 1 — Bellman-Ford: distância até o vértice 10
 V = ["10", "20", "30", "40", "50"]
 for g in grafos:
     if g["fw_inviavel"]:
-        secoes.append(f"## Questão 2 — {g['nome']}\n\nFloyd-Warshall inviável (memória: 12 n² bytes).\n")
+        secoes.append(f"## Questão 2 — {g['nome']}\n\nFloyd-Warshall inviável: a matriz não cabe na memória (12 n² bytes; 8 n² mesmo em float).\n")
         continue
     if g["q2_ciclo"]:
         secoes.append(f"## Questão 2 — {g['nome']}\n\nO grafo tem ciclo negativo (dist[i][i] < 0 para algum i): "

@@ -17,7 +17,7 @@ de caso" (p3_estudos.c, rodar_estudos_p3.sh, gerar_tabelas_p3.py; make
 estudos roda as quatro questoes em todos os grafos de ../../Grafos/P3,
 na raiz do repositorio). O Makefile de la compila contra os fontes desta
 pasta, sem copia-los. O restante e self-contained: a
-biboteca inteira (estendida), os testes e os demos.
+biblioteca inteira (estendida), os testes e os demos.
 
 
 --------------------------------------------------------------------------------
@@ -87,7 +87,7 @@ Bellman-Ford e o Floyd-Warshall); so o Dijkstra e que recusa, como antes.
 --------------------------------------------------------------------------------
 Digrafos nas buscas e no Dijkstra: nenhuma linha mudou neles. A vizinhanca
 de SAIDA ja carrega a direcao, e BFS, DFS e Dijkstra seguem os arcos. O
-que mudou foi a leitura (graf_gen.c: no digrafo, cada linha "a b" escreve
+que mudou foi a leitura (graph_gen.c: no digrafo, cada linha "a b" escreve
 UM no na lista de a / UMA celula [a][b] na matriz, em vez dos dois) e o
 iterador (documentado: vizinhanca de saida).
 
@@ -95,7 +95,7 @@ Operacoes da Parte 1 que sao para grafos NAO direcionados (componentes
 conexas, distancia em arestas, diametro, estatisticas, arquivo de saida)
 recusam digrafos com mensagem de erro - num digrafo o iterador so ve
 vizinhos de saida e elas devolveriam numeros sem sentido (o certo seria
-componentes FORTMENTE conexas, que nao fazem parte do trabalho).
+componentes FORTEMENTE conexas, que nao fazem parte do trabalho).
 
     Graph *Graph_reverse(Graph *g);
         O GRAFO TRANSPOSTO (todas as arestas invertidas), na mesma
@@ -138,8 +138,8 @@ componentes FORTMENTE conexas, que nao fazem parte do trabalho).
         fim de cada passada confere-se, em O(n), se o grafo dos ponteiros
         de pai (v -> parents[v]) tem um ciclo - se tem, ele e negativo, e o
         algoritmo para ali. No grafo_W_1 da Parte 3 (25 mil vertices, com
-        um ciclo de custo -2,22) a deteccao caiu de 63 s (25 mil passadas)
-        para 9 ms (2 passadas). Se o ciclo nao aparecer antes, vale a
+        um ciclo de custo -2,22) a deteccao caiu de 63,5 s (25 mil passadas)
+        para 11 ms (2 passadas). Se o ciclo nao aparecer antes, vale a
         regra classica: uma passada a mais, so para detectar. O BF flaga
         os ciclos que a FONTE alcanca (no _to, os que CHEGAM ao alvo) -
         ciclo fora do alcance nao participa de nenhum caminho do
@@ -176,7 +176,8 @@ componentes FORTMENTE conexas, que nao fazem parte do trabalho).
         o que deixa o compilador vetoriza-lo; e o triplo laco roda EM
         BLOCOS de 64 x 64 (as tres fases: diagonal, linha/coluna, resto),
         que cabem no cache - o FW classico relê a matriz inteira a cada k.
-        Medido em digrafo sintetico com n = 3000: 21,7 s -> 5,8 s. Em
+        Medido na bancada de ../Trabalho 3 - Estudos de caso/otimizacoes
+        (digrafo aleatorio, n = 3000): 22,0 s -> 5,0 s. Em
         empate de custo, a ordem em blocos pode escolher OUTRO caminho
         minimo (outro pred, mesmo custo); com n <= 64 a ordem e a classica.
         PARADA ANTECIPADA: ao fim de cada faixa de 64 valores de k, se

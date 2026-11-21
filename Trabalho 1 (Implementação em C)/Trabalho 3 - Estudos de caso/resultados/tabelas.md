@@ -49,35 +49,17 @@ O grafo tem ciclo negativo (dist[i][i] < 0 para algum i): as distâncias não s�
 | 40 | 5,050 | 12,320 | 5,360 | 0,000 | 5,710 |
 | 50 | 4,480 | 12,230 | 7,790 | 8,260 | 0,000 |
 
-## Questão 2 — Floyd-Warshall, grafo_W_3
+## Questão 2 — grafo_W_3
 
-| de \ para | 10 | 20 | 30 | 40 | 50 |
-|---|--:|--:|--:|--:|--:|
-| 10 | ∞ | ∞ | ∞ | ∞ | ∞ |
-| 20 | ∞ | ∞ | ∞ | ∞ | ∞ |
-| 30 | ∞ | ∞ | ∞ | ∞ | ∞ |
-| 40 | ∞ | ∞ | ∞ | ∞ | ∞ |
-| 50 | ∞ | ∞ | ∞ | ∞ | ∞ |
+Floyd-Warshall inviável (memória: 12 n² bytes).
 
-## Questão 2 — Floyd-Warshall, grafo_W_4
+## Questão 2 — grafo_W_4
 
-| de \ para | 10 | 20 | 30 | 40 | 50 |
-|---|--:|--:|--:|--:|--:|
-| 10 | ∞ | ∞ | ∞ | ∞ | ∞ |
-| 20 | ∞ | ∞ | ∞ | ∞ | ∞ |
-| 30 | ∞ | ∞ | ∞ | ∞ | ∞ |
-| 40 | ∞ | ∞ | ∞ | ∞ | ∞ |
-| 50 | ∞ | ∞ | ∞ | ∞ | ∞ |
+Floyd-Warshall inviável (memória: 12 n² bytes).
 
-## Questão 2 — Floyd-Warshall, grafo_W_5
+## Questão 2 — grafo_W_5
 
-| de \ para | 10 | 20 | 30 | 40 | 50 |
-|---|--:|--:|--:|--:|--:|
-| 10 | ∞ | ∞ | ∞ | ∞ | ∞ |
-| 20 | ∞ | ∞ | ∞ | ∞ | ∞ |
-| 30 | ∞ | ∞ | ∞ | ∞ | ∞ |
-| 40 | ∞ | ∞ | ∞ | ∞ | ∞ |
-| 50 | ∞ | ∞ | ∞ | ∞ | ∞ |
+Floyd-Warshall inviável (memória: 12 n² bytes).
 
 ## Questão 3 — tempo médio (10 rodadas)
 
@@ -96,7 +78,7 @@ O cronômetro cobre só o algoritmo (sem leitura nem escrita em disco). O Bellma
 | Grafo | n × Bellman-Ford | Floyd-Warshall | Johnson | Conferência |
 |---|--:|--:|--:|--:|
 | grafo_W_1 | 27,228 s | 2,818 s | 2,371 ms | ciclo negativo no grafo (johnson) - distancias nao definidas |
-| grafo_W_2 | 319,993 s | 1.517,555 s | 333,308 s | 25000 fontes, 625000000 pares alcancaveis, maior diferenca 0, alcancabilidade divergente em 0 pares (BF x Johnson; FW inviavel) |
+| grafo_W_2 | 319,993 s | 1.517,555 s | 333,308 s | 25000 fontes, 625000000 pares alcancaveis, maior diferenca 0, alcancabilidade divergente em 0 pares (BF x Johnson; FW x BF nas linhas de 10..50 inteiras: maior diferenca 1.6e-06, alcancabilidade divergente em 0 pares) |
 | grafo_W_3 | 9.324,098 s (est.) | — | 9.451,318 s (est.) | 20 fontes, 2000000 pares alcancaveis, maior diferenca 0, alcancabilidade divergente em 0 pares (BF x Johnson; FW inviavel) |
 | grafo_W_4 | 1.137.210,501 s (est.) | — | 1.765.755,932 s (est.) | 5 fontes, 5000000 pares alcancaveis, maior diferenca 0, alcancabilidade divergente em 0 pares (BF x Johnson; FW inviavel) |
 | grafo_W_5 | 160.716.247,753 s (est.) | — | 153.012.129,704 s (est.) | 3 fontes, 30000000 pares alcancaveis, maior diferenca 0, alcancabilidade divergente em 0 pares (BF x Johnson; FW inviavel) |

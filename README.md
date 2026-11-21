@@ -1,4 +1,4 @@
-# COS242 — Biblioteca de grafos (Trabalhos 1 e 2)
+# COS242 — Biblioteca de grafos (Trabalhos 1, 2 e 3)
 
 Trabalho da disciplina Teoria dos Grafos (COS242, UFRJ): uma biblioteca para
 grafos não-direcionados com matriz e lista de adjacência, BFS, DFS, distâncias,
@@ -12,6 +12,8 @@ Dupla: Matheus da Silva e Luiz Felipe Cantanhede Cristino.
 |---|---|
 | [`Trabalho 1 (Implementação em C)/`](<Trabalho 1 (Implementação em C)/>) | a entrega da Parte 1: a biblioteca em C, os testes da Parte 1 e a automação dos estudos de caso dela (os fontes da biblioteca — estendidos com pesos e Dijkstra para a Parte 2 — são idênticos aos da pasta do Trabalho 2) |
 | [`Trabalho 2/`](<Trabalho 2/>) | a entrega da Parte 2, de forma independente: os mesmos fontes da biblioteca, o `test_parte2`, os demos novos (heap e dijkstra) e os programas e a automação dos estudos de caso da Parte 2; o Makefile tem só os alvos dela |
+| [`Trabalho 1 (Implementação em C)/Trabalho 3/`](<Trabalho 1 (Implementação em C)/Trabalho 3/>) | a entrega da Parte 3: a biblioteca estendida para grafos direcionados com pesos (o parâmetro `direcionado` na leitura e o grafo transposto), Bellman-Ford, Floyd-Warshall e Johnson, com o `test_parte3` |
+| [`Trabalho 1 (Implementação em C)/Trabalho 3 - Estudos de caso/`](<Trabalho 1 (Implementação em C)/Trabalho 3 - Estudos de caso/>) | os estudos de caso da Parte 3, em pasta externa como combinado com o professor: `p3_estudos.c`, a automação, os resultados e as bancadas de `otimizacoes/` |
 | [`Trabalho 1/`](<Trabalho 1/>) | protótipo em Python, de onde a versão em C foi transcrita |
 | `Grafos/` | grafos do estudo de caso (não versionados; baixe do site da disciplina) |
 
@@ -25,6 +27,9 @@ make test
 
 cd "../Trabalho 2"
 make test
+
+cd "../Trabalho 1 (Implementação em C)/Trabalho 3"
+make test
 ```
 
 ## Estudos de caso
@@ -37,6 +42,9 @@ cd "Trabalho 1 (Implementação em C)"   # Parte 1: questões 1 a 7 em cada graf
 make estudos
 
 cd ../Trabalho\ 2                       # Parte 2: só grafos com pesos
+make estudos
+
+cd "../Trabalho 1 (Implementação em C)/Trabalho 3 - Estudos de caso"   # Parte 3: grafos em Grafos/P3
 make estudos
 ```
 
